@@ -67,8 +67,8 @@ qual_vals = array(data = NA, dim = N) # quality values
 #option: normally distributed quality values
 qual_vals = rnorm(N, mean = qual_mean, sd = qual_sd) 
 
-#matrix of columns of quality values
-qual_mat = matrix(rep(qual_vals,N), ncol=N, byrow=TRUE) 
+# #matrix of columns of quality values
+# qual_mat = matrix(rep(qual_vals,N), ncol=N, byrow=TRUE) 
 
 sig_vals = array(data = NA, dim = N) # signal values
 #option: signals are correlated with quality 
@@ -110,19 +110,16 @@ for(i in 1:N){
 	wins[[i]] = numeric()
 	losses[[i]] = numeric()
 }
-num_fights = array(0,dim=N) # number of fights each animal engages in
-fight_history_cat = array(0,dim=c(2,2,Tfights+1)) #history of each pair and their perceived opponent category at each fight
-fight_history_ind = array(0,dim=c(2,2,Tfights+1)) #history of each pair and their perceived opponent at each fight
-last_fights_cat = array(Inf, dim=c(N,categor_num))
-last_fights_ind = array(Inf, dim=c(N,N))
 
-a_cat_byind = array(NA, dim=c(N,N,Tfights+1))
-a_cat_bycat = array(NA, dim=c(N,categor_num,Tfights+1))
-a_ind = array(NA, dim=c(N,N,Tfights+1))
+last_fights_cat = array(Inf, dim=c(N,categor_num)) #last time each individual thought it encountered each category
+last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each other individual
+
+a_cat_byind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
+a_cat_bycat = array(NA, dim=c(N,categor_num,Tfights+1)) #assessment by each individual of each other individual, using categories
+a_ind = array(NA, dim=c(N,N,Tfights+1)) #assessment of each individual of each other individual
 
 for(t in 1:Tfights){
 	pair = sample(1:N, 2, replace = FALSE) #draw two animals at random
-	num_fights[pair] = num_fights[pair]+1
 	p = win_prob(qual_vals[pair]) # probability of first animal winning
 	outcome = sample(0:1,1,prob = c(p,1-p)) # see who wins and loses
 	if(outcome == 0){
@@ -139,7 +136,7 @@ for(t in 1:Tfights){
 			perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num),ncol=categor_num)>confus_mat)+1 #use confus_mat to see which category perceptions get switched to
 		}
 			# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
-		fight_history_cat[,,t] = matrix(c(pair,perc_cats[pair[1],pair[2]],perc_cats[pair[2],pair[1]]),nrow=2) 
+		
 		last_fights_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
 		last_fights_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0
 		new_as_cat_bycat = a_cat_bycat[,,t] #if you weren't involved in the fight your assessment doesn't change
@@ -154,15 +151,6 @@ for(t in 1:Tfights){
 		}
 		a_cat_byind[,,t+1] = new_as_cat_byind
 		
-		# a_cat_byind[,,t+1] = a_cat_bycat[,sig_cats,t+1]
-		
-		# new_as_cat_byind = a_cat_byind[,,t] #if you weren't involved in the fight your assessment doesn't change
-		# new_as_cat_byind[last_fights_cat[,sig_cats]>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
-
-		# a_cat_byind[,,t+1] = new_as_cat_byind
-		# a_cat_byind[pair[1],sig_cats==perc_cats[2],t+1] = update(a_cat_byind[pair[1],pair[2],t],qual_vals[pair[2]]) #opponents assess each other
-		# a_cat_byind[pair[2],sig_cats==perc_cats[1],t+1] = update(a_cat_byind[pair[2],pair[1],t],qual_vals[pair[1]])
-		
 		last_fights_cat = last_fights_cat+1
 	
 	#learning about the identity of one's opponent:
@@ -174,7 +162,7 @@ for(t in 1:Tfights){
 		if(draw[2]<confus_prob_ind){
 			perc_pair[2] = sample(setdiff(1:N,pair[2]),1)
 		}
-		fight_history_ind[,,t] = matrix(c(pair,rev(perc_pair)),nrow=2)	
+		
 		last_fights_ind[pair[1],perc_pair[2]] = 0
 		last_fights_ind[pair[2],perc_pair[1]] = 0
 		new_as_ind = a_ind[,,t] #if you weren't involved in the fight your assessment doesn't change
@@ -185,8 +173,7 @@ for(t in 1:Tfights){
 		last_fights_ind = last_fights_ind+1
 }
 
-#######
-#how well did they learn over time?
+#how well did they learn?
 error_cat = array(NA, dim = c(N,Tfights+1))
 error_ind = array(NA, dim = c(N,Tfights+1))
 #how quickly did they get close to their final assessment?
@@ -229,29 +216,3 @@ for(i in 1:N){
 	learning_time_cat[i] = median(time_vec_cat,na.rm=TRUE)
 	learning_time_ind[i] = median(time_vec_ind,na.rm=TRUE)
 }
-
-############## plotting some stuff
-par(mfrow=c(1,2))
-
-plot(qual_vals,sig_vals,xlab='Quality',ylab='Signal',main=round(cor(qual_vals,sig_vals),3))
-
-M = max(max(error_cat,na.rm=TRUE),max(error_ind,na.rm=TRUE))
-plot(1:Tfights+1,1:Tfights+1,ylim=c(0,0.5),type='n',xlab='Fights',ylab='Error') 
-
-for(i in 1:N){
-	lines(error_cat[i,])
-	lines(error_ind[i,],col='red')
-}
-
-legend(x=.4*Tfights,y=0.9*M,legend=c('Categories','Individuals'),col=c('black','red'),lty=c(1,1),border='none')
-
-# M = max(max(error_cat,na.rm=TRUE),max(error_ind,na.rm=TRUE))
-# plot(1:1500,1:1500,type='n',ylim=c(0,M),xlab='Fights',ylab='Error')
-
-# for(i in 1:N){
-	# lines(error_cat[i,1:1500])
-	# lines(error_ind[i,1:1500],col='red')
-# }
-
-# legend(x=.4*Tfights,y=0.9*M,legend=c('Categories','Individuals'),col=c('black','red'),lty=c(1,1),border='none')
-
