@@ -20,7 +20,7 @@ update <- function(a, q){ # given current assessment a and true quality q, updat
 	return(anew)
 }
 
-fixCorr = function(x1,x2,rho){
+fixCorr = function(x1,x2,rho){ #given x1 and x2 produce new x2 with correlation of rho with x1
 	n = length(x1)
 	theta <- acos(rho)             # corresponding angle
 	X     <- cbind(x1, x2)         # matrix
@@ -42,177 +42,183 @@ fixCorr = function(x1,x2,rho){
 ## ---- parameters -------------------------
 Tfights = 1000 #total number of fights 
 N = 20 # individuals
-categor_num = 100 #number of categories to learn about
+categor_num = 10 #number of categories to learn about
 memory_window = Inf #how many fights ago they can remember
-confus_prob_cat = 0 #maximum probability of misidentifying categories, which decreases with dissimilarity
-confus_prob_ind = 0 #probability of misidentifying individuals
+confus_prob_cat = 0.05 #maximum probability of misidentifying categories, which decreases with dissimilarity
+confus_prob_ind = 0.5 #probability of misidentifying individuals
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
 sig_qual_corr = 0.5 #correlation between quality and signal
 learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
-learn_noise = 0 #how noisy an updated assessment is
-dominance = 0.5 #how quickly the probability switches from A winning to A losing
+learn_noise = 0.01 #how noisy an updated assessment is
+dominance = 2 #how quickly the probability switches from A winning to A losing
 sig_min = -1 ; sig_max = 1
-error_threshold = 0.5
+error_threshold = 0.2
 
+##---- the_whole_process ---------------------------
 #set up group with quality values and signal values: 
 
-qual_vals = array(data = NA, dim = N) # quality values
-# #option: one animal in each of N bins
-# qual_vals = seq(0, 1, by = 1/N) 
-# #option: uniformly distributed quality values
-# qual_vals = runif(N , min = 0, max = 1) 
-# #option: lognormally distributed quality values
-# qual_vals = exp(rnorm(N, mean = 0, sd = qual_sd)) 
-#option: normally distributed quality values
-qual_vals = rnorm(N, mean = qual_mean, sd = qual_sd) 
+dynamics <- function(){
 
-# #matrix of columns of quality values
-# qual_mat = matrix(rep(qual_vals,N), ncol=N, byrow=TRUE) 
-
-sig_vals = array(data = NA, dim = N) # signal values
-#option: signals are correlated with quality 
-sig_vals = rnorm(N, mean = 0, 1)
-sig_vals = fixCorr(qual_vals,sig_vals,sig_qual_corr)
-# #option: uniformly distributed sigals
-# sig_vals = runif(N, min =0, max = 1) 
-# #option: lognormally distributed signals: 
-# sig_sd = 0.5; sig_vals = exp(rnorm(N, mean =0, sd = sig_sd)) 
-# #option: normally distributed signal values
-# sig_sd = 0.5; sig_vals = rnorm(N, mean =0, sd =sig_sd) 
-
-categor_breaks = sig_min+1:(categor_num-1)*(sig_max-sig_min)/categor_num
-sig_cats = array(data = NA, dim =N) #which category each animal is in
-for(i in 1:N){
-	sig_cats[i] = sum(sig_vals[i] > categor_breaks)+1 
-}
-
-confus_mat = array(0, dim=c(N,categor_num))
-for(i in 1:N){
-	if(sig_cats[i]==1){
-		confus_mat[i,2] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[1]))
-		confus_mat[i,1] = 1-confus_mat[i,2]
-	} else if(sig_cats[i]==categor_num){
-		confus_mat[i,categor_num-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[categor_num-1]))
-		confus_mat[i,categor_num] = 1-confus_mat[i,categor_num-1]
-	} else{
-		confus_mat[i,sig_cats[i]-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]-1]))
-		confus_mat[i,sig_cats[i]+1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]]))
-		confus_mat[i,sig_cats[i]] = 1-confus_mat[i,sig_cats[i]-1] - confus_mat[i,sig_cats[i]+1]
-		}
-}
-confus_mat = t(apply(confus_mat,1,cumsum))
-
-#the fighting and learning dynamics: 
-wins = list() # keep track of qualities of members involved in wins and losses for each animal
-losses = list()
-for(i in 1:N){ 
-	wins[[i]] = numeric()
-	losses[[i]] = numeric()
-}
-
-last_fights_cat = array(Inf, dim=c(N,categor_num)) #last time each individual thought it encountered each category
-last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each other individual
-
-a_cat_byind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
-a_cat_bycat = array(NA, dim=c(N,categor_num,Tfights+1)) #assessment by each individual of each other individual, using categories
-a_ind = array(NA, dim=c(N,N,Tfights+1)) #assessment of each individual of each other individual
-
-for(t in 1:Tfights){
-	pair = sample(1:N, 2, replace = FALSE) #draw two animals at random
-	p = win_prob(qual_vals[pair]) # probability of first animal winning
-	outcome = sample(0:1,1,prob = c(p,1-p)) # see who wins and loses
-	if(outcome == 0){
-		wins[[pair[1]]] = cbind(wins[[pair[1]]],qual_vals[pair]) #add quality values to current wins for pair[1]
-		losses[[pair[2]]] = cbind(losses[[pair[2]]],qual_vals[rev(pair)]) #add quality values to current losses for pair[2], reversed so focal animal is first
-	} else{
-		wins[[pair[2]]] = cbind(wins[[pair[2]]],qual_vals[rev(pair)])
-		losses[[pair[1]]] = cbind(losses[[pair[1]]],qual_vals[pair])
-	}
-	#learning about the signal of one's opponent:
-		draw = matrix(runif(N*N,0,1),nrow=N) #random numbers to generate confusion events
-		perc_cats = array(NA, dim = c(N,N)) #each individual's perception of every other's category
-		for(i in 1:N){
-			perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num),ncol=categor_num)>confus_mat)+1 #use confus_mat to see which category perceptions get switched to
-		}
-			# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
-		
-		last_fights_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
-		last_fights_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0
-		new_as_cat_bycat = a_cat_bycat[,,t] #if you weren't involved in the fight your assessment doesn't change
-		new_as_cat_bycat[last_fights_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
-		a_cat_bycat[,,t+1] = new_as_cat_bycat
-		a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t+1] = update(a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
-		a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t+1] = update(a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t],qual_vals[pair[1]])
-		
-		new_as_cat_byind = array(NA,dim=c(N,N))
-		for(i in 1:N){
-			new_as_cat_byind[i,]=a_cat_bycat[i,perc_cats[i,],t+1] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories
-		}
-		a_cat_byind[,,t+1] = new_as_cat_byind
-		
-		last_fights_cat = last_fights_cat+1
+	qual_vals = array(data = NA, dim = N) # quality values
+	# #option: one animal in each of N bins
+	# qual_vals = seq(0, 1, by = 1/N) 
+	# #option: uniformly distributed quality values
+	# qual_vals = runif(N , min = 0, max = 1) 
+	# #option: lognormally distributed quality values
+	# qual_vals = exp(rnorm(N, mean = 0, sd = qual_sd)) 
+	#option: normally distributed quality values
+	qual_vals = rnorm(N, mean = qual_mean, sd = qual_sd) 
 	
-	#learning about the identity of one's opponent:
-		draw = runif(2,0,1) #random numbers to generate confusion events
-		perc_pair = pair  
-		if(draw[1]<confus_prob_ind){
-			perc_pair[1] = sample(setdiff(1:N,pair[1]),1) #with low probability draw a different individual that the focal thinks it's interacting with
-		}
-		if(draw[2]<confus_prob_ind){
-			perc_pair[2] = sample(setdiff(1:N,pair[2]),1)
+	# #matrix of columns of quality values
+	# qual_mat = matrix(rep(qual_vals,N), ncol=N, byrow=TRUE) 
+	
+	sig_vals = array(data = NA, dim = N) # signal values
+	#option: signals are correlated with quality 
+	sig_vals = rnorm(N, mean = 0, 1)
+	sig_vals = fixCorr(qual_vals,sig_vals,sig_qual_corr)
+	# #option: uniformly distributed sigals
+	# sig_vals = runif(N, min =0, max = 1) 
+	# #option: lognormally distributed signals: 
+	# sig_sd = 0.5; sig_vals = exp(rnorm(N, mean =0, sd = sig_sd)) 
+	# #option: normally distributed signal values
+	# sig_sd = 0.5; sig_vals = rnorm(N, mean =0, sd =sig_sd) 
+	
+	categor_breaks = sig_min+1:(categor_num-1)*(sig_max-sig_min)/categor_num
+	sig_cats = array(data = NA, dim =N) #which category each animal is in
+	for(i in 1:N){
+		sig_cats[i] = sum(sig_vals[i] > categor_breaks)+1 
+	}
+	
+	confus_mat = array(0, dim=c(N,categor_num)) #confus_mat[i,j] = prob ind i is perceived to be in cat j, same for every perceiver!
+	for(i in 1:N){
+		if(sig_cats[i]==1){
+			confus_mat[i,2] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[1]))
+			confus_mat[i,1] = 1-confus_mat[i,2]
+		} else if(sig_cats[i]==categor_num){
+			confus_mat[i,categor_num-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[categor_num-1]))
+			confus_mat[i,categor_num] = 1-confus_mat[i,categor_num-1]
+		} else{
+			confus_mat[i,sig_cats[i]-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]-1]))
+			confus_mat[i,sig_cats[i]+1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]]))
+			confus_mat[i,sig_cats[i]] = 1-confus_mat[i,sig_cats[i]-1] - confus_mat[i,sig_cats[i]+1]
+			}
+	}
+	confus_mat = t(apply(confus_mat,1,cumsum)) #easier to keep track of cumulative confusion probabilities
+	
+	#the fighting and learning dynamics: 
+	wins = list() # keep track of qualities of members involved in wins and losses for each animal
+	losses = list()
+	for(i in 1:N){ 
+		wins[[i]] = numeric()
+		losses[[i]] = numeric()
+	}
+	
+	last_fights_cat = array(Inf, dim=c(N,categor_num)) #last time each individual thought it encountered each category
+	last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each other individual
+	
+	a_cat_bycat = array(NA, dim=c(N,categor_num,Tfights+1)) #assessment by each individual of each other individual, using categories
+	a_cat_byind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
+	a_ind = array(NA, dim=c(N,N,Tfights+1)) #assessment of each individual of each other individual
+	
+	for(t in 1:Tfights){
+		pair = sample(1:N, 2, replace = FALSE) #draw two animals at random
+		p = win_prob(qual_vals[pair]) # probability of first animal winning
+		outcome = sample(0:1,1,prob = c(p,1-p)) # see who wins and loses
+		if(outcome == 0){
+			wins[[pair[1]]] = cbind(wins[[pair[1]]],qual_vals[pair]) #add quality values to current wins for pair[1]
+			losses[[pair[2]]] = cbind(losses[[pair[2]]],qual_vals[rev(pair)]) #add quality values to current losses for pair[2], reversed so focal animal is first
+		} else{
+			wins[[pair[2]]] = cbind(wins[[pair[2]]],qual_vals[rev(pair)])
+			losses[[pair[1]]] = cbind(losses[[pair[1]]],qual_vals[pair])
 		}
 		
-		last_fights_ind[pair[1],perc_pair[2]] = 0
-		last_fights_ind[pair[2],perc_pair[1]] = 0
-		new_as_ind = a_ind[,,t] #if you weren't involved in the fight your assessment doesn't change
-		new_as_ind[last_fights_ind>memory_window] = NA #if you fought more than memory_window fights ago you forget your assessments
-		a_ind[,,t+1] = new_as_ind
-		a_ind[pair[1],perc_pair[2],t+1] = update(a_ind[pair[1],perc_pair[2],t],qual_vals[pair[2]]) #each animal updates its assessment of the individual it perceives based on the quality it experiences
-		a_ind[pair[2],perc_pair[1],t+1] = update(a_ind[pair[2],perc_pair[1],t],qual_vals[pair[1]])
-		last_fights_ind = last_fights_ind+1
-}
-
-#how well did they learn?
-error_cat = array(NA, dim = c(N,Tfights+1))
-error_ind = array(NA, dim = c(N,Tfights+1))
-#how quickly did they get close to their final assessment?
-learning_time_cat = array(NA, dim=c(N,1))
-learning_time_ind = array(NA, dim=c(N,1))
-#what was everyone else's opinion of me over time?
-highrank_cat = array(NA, dim=c(N,Tfights+1))
-highrank_ind = array(NA, dim=c(N,Tfights+1))
-#costs of losing? while fights are random, these don't depend on the recognition system, but we'll need two if we consider strategic fights.
-losing_costs_cat = array(NA, dim=c(N,Tfights+1))
-losing_costs_ind = array(NA, dim=c(N,Tfights+1))
-for(i in 1:N){
-	for(t in 1:(Tfights+1)){
-
-		if(sum(!is.na(a_cat_byind[i,,t]))>=1){
-			error_cat[i,t] = sum(abs(a_cat_byind[i,,t]-qual_vals) ,na.rm=TRUE) /sum(!is.na(a_cat_byind[i,,t])) #/ abs(qual_vals)
+		#learning about the signal of one's opponent:
+			draw = matrix(runif(N*N,0,1),nrow=N) #random numbers to generate confusion events
+			perc_cats = array(NA, dim = c(N,N)) #each individual's perception of every other's category
+			for(i in 1:N){
+				perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num),ncol=categor_num)>confus_mat)+1 #use confus_mat to see which category perceptions get switched to
 			}
-		if(sum(!is.na(a_ind[i,,t]))>=1){
-			error_ind[i,t] = sum(abs(a_ind[i,,t]-qual_vals ) ,na.rm=TRUE) /sum(!is.na(a_ind[i,,t]))  #/ abs(qual_vals)
+				# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
+			
+			last_fights_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
+			last_fights_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0
+			new_as_cat_bycat = a_cat_bycat[,,t] #if you weren't involved in the fight your assessment doesn't change
+			new_as_cat_bycat[last_fights_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
+			a_cat_bycat[,,t+1] = new_as_cat_bycat
+			a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t+1] = update(a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
+			a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t+1] = update(a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t],qual_vals[pair[1]])
+			
+			new_as_cat_byind = array(NA,dim=c(N,N))
+			for(i in 1:N){
+				new_as_cat_byind[i,]=a_cat_bycat[i,perc_cats[i,],t+1] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories
 			}
-		if(sum(!is.na(a_cat_byind[,i,t]))>=1){
-		highrank_cat[i,t] = sum(a_cat_byind[,i,t],na.rm=TRUE) /sum(!is.na(a_cat_byind[,i,t]))
+			a_cat_byind[,,t+1] = new_as_cat_byind
+			
+			last_fights_cat = last_fights_cat+1
+		
+		#learning about the identity of one's opponent:
+			draw = runif(2,0,1) #random numbers to generate confusion events
+			perc_pair = pair  
+			if(draw[1]<confus_prob_ind){
+				perc_pair[1] = sample(setdiff(1:N,pair[1]),1) #with low probability draw a different individual that the focal thinks it's interacting with
 			}
-		if(sum(!is.na(a_ind[,i,t]))>=1){
-			highrank_ind[i,t] = sum(a_ind[,i,t],na.rm=TRUE) /sum(!is.na(a_ind[,i,t]))
+			if(draw[2]<confus_prob_ind){
+				perc_pair[2] = sample(setdiff(1:N,pair[2]),1)
 			}
+			
+			last_fights_ind[pair[1],perc_pair[2]] = 0
+			last_fights_ind[pair[2],perc_pair[1]] = 0
+			new_as_ind = a_ind[,,t] #if you weren't involved in the fight your assessment doesn't change
+			new_as_ind[last_fights_ind>memory_window] = NA #if you fought more than memory_window fights ago you forget your assessments
+			a_ind[,,t+1] = new_as_ind
+			a_ind[pair[1],perc_pair[2],t+1] = update(a_ind[pair[1],perc_pair[2],t],qual_vals[pair[2]]) #each animal updates its assessment of the individual it perceives based on the quality it experiences
+			a_ind[pair[2],perc_pair[1],t+1] = update(a_ind[pair[2],perc_pair[1],t],qual_vals[pair[1]])
+			last_fights_ind = last_fights_ind+1
 	}
-	time_vec_cat = array(NA,dim=N)
-	time_vec_ind = array(NA, dim=N)
-	for(j in setdiff(1:N,i)){
-		v = which(abs(a_cat_byind[i,j,]-a_cat_byind[i,j,Tfights+1])<= error_threshold)
-		if(length(v)>0){
-			time_vec_cat[j] = v[1]-1
-		} else{ time_vec_cat[j] = Tfights}
-		v = which(abs(a_ind[i,j,]-a_ind[i,j,Tfights+1])<= error_threshold)
-		if(length(v)>0){
-			time_vec_ind[j] = v[1]-1
-		} else{ time_vec_ind[j] = Tfights}
+	
+	#how well did they learn?
+	error_cat = array(NA, dim = c(N,Tfights+1))
+	error_ind = array(NA, dim = c(N,Tfights+1))
+	#how quickly did they get close to their final assessment?
+	time_cat = array(NA, dim=c(N,1))
+	time_ind = array(NA, dim=c(N,1))
+	# #what was everyone else's opinion of me over time?
+	# highrank_cat = array(NA, dim=c(N,Tfights+1))
+	# highrank_ind = array(NA, dim=c(N,Tfights+1))
+	# #costs of losing? while fights are random, these don't depend on the recognition system, but we'll need two if we consider strategic fights.
+	# losing_costs_cat = array(NA, dim=c(N,Tfights+1))
+	# losing_costs_ind = array(NA, dim=c(N,Tfights+1))
+	for(i in 1:N){
+		for(t in 1:(Tfights+1)){
+	
+			if(sum(!is.na(a_cat_byind[i,,t]))>=1){
+				error_cat[i,t] = sum(abs(a_cat_byind[i,,t]-qual_vals) ,na.rm=TRUE) /sum(!is.na(a_cat_byind[i,,t])) #/ abs(qual_vals)
+				}
+			if(sum(!is.na(a_ind[i,,t]))>=1){
+				error_ind[i,t] = sum(abs(a_ind[i,,t]-qual_vals ) ,na.rm=TRUE) /sum(!is.na(a_ind[i,,t]))  #/ abs(qual_vals)
+				}
+			# if(sum(!is.na(a_cat_byind[,i,t]))>=1){
+			# highrank_cat[i,t] = sum(a_cat_byind[,i,t],na.rm=TRUE) /sum(!is.na(a_cat_byind[,i,t]))
+				# }
+			# if(sum(!is.na(a_ind[,i,t]))>=1){
+				# highrank_ind[i,t] = sum(a_ind[,i,t],na.rm=TRUE) /sum(!is.na(a_ind[,i,t]))
+				# }
+		}
+		time_cat_temp = array(NA,dim=N)
+		time_ind_temp = array(NA, dim=N)
+		for(j in setdiff(1:N,i)){
+			v = which(abs(a_cat_byind[i,j,]-a_cat_byind[i,j,Tfights+1])<= error_threshold)
+			if(length(v)>0){
+				time_cat_temp[j] = v[1]-1
+			} else{ time_cat_temp[j] = Tfights}
+			v = which(abs(a_ind[i,j,]-a_ind[i,j,Tfights+1])<= error_threshold)
+			if(length(v)>0){
+				time_ind_temp[j] = v[1]-1
+			} else{ time_ind_temp[j] = Tfights}
+		}
+		time_cat[i] = median(time_cat_temp,na.rm=TRUE)
+		time_ind[i] = median(time_ind_temp,na.rm=TRUE)
 	}
-	learning_time_cat[i] = median(time_vec_cat,na.rm=TRUE)
-	learning_time_ind[i] = median(time_vec_ind,na.rm=TRUE)
+	return(list(error_cat,error_ind,time_cat,time_ind))
 }

@@ -1,3 +1,4 @@
+#this is the file I wrote at the hackathon to make some quick plots. it's out of date, but i'm hanging onto it as a reference.
 ######
 #functions: 
 
