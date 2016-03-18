@@ -47,7 +47,7 @@ xcorr = length(corr_vals)
 d = c(xN,xcat,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
 
-L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %do%{
+L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{
 	v = ind2sub(d,ind)
 	N = N_vals[v[1]]
 	categor_num = cat_vals[v[2]]
