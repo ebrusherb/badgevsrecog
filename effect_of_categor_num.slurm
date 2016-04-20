@@ -2,9 +2,9 @@
 
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20
-#SBATCH -t 40:00:00
-#SBATCH -J badgevsrecog_paramsweep
-#SBATCH -o badgevsrecog_paramsweep.out
+#SBATCH -t 10:00:00
+#SBATCH -J categornum
+#SBATCH -o categornum.out
 # #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=eleanor.brush@gmail.com
@@ -21,6 +21,6 @@ echo 'Running on'
 hostname
 echo '-------------------------------'
 
-R --no-save < paramsweep_par.R
+R --no-save < effect_of_categor_num.R
 
 # rm -rf /tmp/ebrush/$SLURM_JOB_ID

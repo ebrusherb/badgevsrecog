@@ -32,7 +32,7 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(20,100,500)
+N_vals = c(20)
 xN = length(N_vals)
 cat_vals = c(2,10,25)
 xcat = length(cat_vals)
@@ -73,7 +73,7 @@ for(ind in 1:P){
 	time_ind[[ind]] = L[[4]][[ind]]
 }
 
-save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,cat_vals=cat_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file='/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par.Rdata')
+save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,cat_vals=cat_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file='/homes/ebrush/priv/badgevsrecog/badgevsrecog_smallparamsweep_par.Rdata')
 
 stopCluster(cl)
 

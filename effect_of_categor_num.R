@@ -32,17 +32,17 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(20,100,500)
+N_vals = c(50)
 xN = length(N_vals)
-cat_vals = c(2,10,25)
+cat_vals = c(2,seq(5,40,by=5))
 xcat = length(cat_vals)
-wind_vals = c(Inf,200)
+wind_vals = c(Inf,500)
 xwind = length(wind_vals)
 confus_cat_vals = c(0)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)
-corr_vals = c(0.3,0.9)
+corr_vals = c(0.9)
 xcorr = length(corr_vals)
 d = c(xN,xcat,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
@@ -73,7 +73,7 @@ for(ind in 1:P){
 	time_ind[[ind]] = L[[4]][[ind]]
 }
 
-save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,cat_vals=cat_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file='/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par.Rdata')
+save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,cat_vals=cat_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file='/homes/ebrush/priv/badgevsrecog/badgevsrecog_effect_of_categor_num.Rdata')
 
 stopCluster(cl)
 
