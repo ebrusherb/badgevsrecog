@@ -40,20 +40,20 @@ fixCorr = function(x1,x2,rho){ #given x1 and x2 produce new x2 with correlation 
 }
 
 ## ---- parameters -------------------------
-Tfights = 1000 #total number of fights 
+Tfights = 100 #total number of fights 
 N = 20 # individuals
-categor_num = 10 #number of categories to learn about
-memory_window = Inf #how many fights ago they can remember
-confus_prob_cat = 0.05 #maximum probability of misidentifying categories, which decreases with dissimilarity
-confus_prob_ind = 0.5 #probability of misidentifying individuals
+perc_wind = 1 # difference that animals can perceive
+memory_window = 200 #how many fights ago they can remember
+confus_prob_cat = 500 #maximum probability of misidentifying categories, which decreases with dissimilarity
+confus_prob_ind = 0.1 #probability of misidentifying individuals
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
 sig_qual_corr = 0.5 #correlation between quality and signal
 learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
 learn_noise = 0.01 #how noisy an updated assessment is
 dominance = 2 #how quickly the probability switches from A winning to A losing
-sig_min = -1 ; sig_max = 1
 error_threshold = 0.2
+
 
 ##---- the_whole_process ---------------------------
 #set up group with quality values and signal values: 
@@ -84,27 +84,39 @@ dynamics <- function(){
 	# #option: normally distributed signal values
 	# sig_sd = 0.5; sig_vals = rnorm(N, mean =0, sd =sig_sd) 
 	
-	categor_breaks = sig_min+1:(categor_num-1)*(sig_max-sig_min)/categor_num
-	sig_cats = array(data = NA, dim =N) #which category each animal is in
+	sig_cats = array(NA, dim =c(N,N))
+	categor_num = array(0, dim=N)
+	confus_mat = as.list(rep(NA,N))
+	
 	for(i in 1:N){
-		sig_cats[i] = sum(sig_vals[i] > categor_breaks)+1 
+		sig_cats_temp = array(NA, dim = N)
+		left = 1:N
+		cat_now = 1
+		cat_med = array(NA,dim=0)
+		while(length(left)>0){
+			if(length(left)>1){
+			first = sample(left,size=1)} else{ first = left}
+			to_categorize = which(abs(sig_vals[left]-sig_vals[first])<=perc_wind/2)
+			sig_cats_temp[left[to_categorize]] = cat_now
+			cat_now = cat_now+1
+			cat_med = c(cat_med,median(sig_vals[left[to_categorize]]))
+				left = left[-to_categorize]
+		} 
+		
+		o = order(cat_med)
+		
+		for(j in 1:length(o)){
+			sig_cats[i,sig_cats_temp==o[j]] = j
+		}
+		cat_med = sort(cat_med)
+		categor_num[i] = max(sig_cats_temp)
+		confus_mat[[i]] = array(0, dim=c(N,categor_num[i])) #confus_mat[[i]][j,k] = prob i perceives j to be in cat k
+		for(j in 1:N){
+			confus_mat[[i]][j,]=cumsum(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med))/sum(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med)))) #easier to keep track of cumulative confusion probabilities
+		}
 	}
 	
-	confus_mat = array(0, dim=c(N,categor_num)) #confus_mat[i,j] = prob ind i is perceived to be in cat j, same for every perceiver!
-	for(i in 1:N){
-		if(sig_cats[i]==1){
-			confus_mat[i,2] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[1]))
-			confus_mat[i,1] = 1-confus_mat[i,2]
-		} else if(sig_cats[i]==categor_num){
-			confus_mat[i,categor_num-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[categor_num-1]))
-			confus_mat[i,categor_num] = 1-confus_mat[i,categor_num-1]
-		} else{
-			confus_mat[i,sig_cats[i]-1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]-1]))
-			confus_mat[i,sig_cats[i]+1] = confus_prob_cat*exp(-abs(sig_vals[i]-categor_breaks[sig_cats[i]]))
-			confus_mat[i,sig_cats[i]] = 1-confus_mat[i,sig_cats[i]-1] - confus_mat[i,sig_cats[i]+1]
-			}
-	}
-	confus_mat = t(apply(confus_mat,1,cumsum)) #easier to keep track of cumulative confusion probabilities
+	categor_num_max = max(categor_num)
 	
 	#the fighting and learning dynamics: 
 	wins = list() # keep track of qualities of members involved in wins and losses for each animal
@@ -114,13 +126,13 @@ dynamics <- function(){
 		losses[[i]] = numeric()
 	}
 	
-	last_fights_cat = array(Inf, dim=c(N,categor_num)) #last time each individual thought it encountered each category
-	last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each other individual
+	last_fights_cat = array(Inf, dim=c(N,categor_num_max)) #last time each individual thought it encountered each category
+	last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each category
 	
-	a_cat_bycat = array(NA, dim=c(N,categor_num,Tfights+1)) #assessment by each individual of each other individual, using categories
+	a_cat_bycat = array(NA, dim=c(N,categor_num_max,Tfights+1)) #assessment by each individual of each other individual, using categories
 	a_cat_byind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
-	a_ind = array(NA, dim=c(N,N,Tfights+1)) #assessment of each individual of each other individual
-	
+	a_ind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
+		
 	for(t in 1:Tfights){
 		pair = sample(1:N, 2, replace = FALSE) #draw two animals at random
 		p = win_prob(qual_vals[pair]) # probability of first animal winning
@@ -137,7 +149,7 @@ dynamics <- function(){
 			draw = matrix(runif(N*N,0,1),nrow=N) #random numbers to generate confusion events
 			perc_cats = array(NA, dim = c(N,N)) #each individual's perception of every other's category
 			for(i in 1:N){
-				perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num),ncol=categor_num)>confus_mat)+1 #use confus_mat to see which category perceptions get switched to
+				perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num[i]),ncol=categor_num[i])>confus_mat[[i]])+1 #use confus_mat to see which category perceptions get switched to
 			}
 				# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
 			
@@ -208,11 +220,13 @@ dynamics <- function(){
 		time_cat_temp = array(NA,dim=N)
 		time_ind_temp = array(NA, dim=N)
 		for(j in setdiff(1:N,i)){
-			v = which(abs(a_cat_byind[i,j,]-a_cat_byind[i,j,Tfights+1])<= error_threshold)
+			# v = which(abs(a_cat_byind[i,j,]-a_cat_byind[i,j,Tfights+1])<= error_threshold)
+			v = which(abs(a_cat_byind[i,j,]-qual_vals[j])<=error_threshold)
 			if(length(v)>0){
 				time_cat_temp[j] = v[1]-1
 			} else{ time_cat_temp[j] = Tfights}
-			v = which(abs(a_ind[i,j,]-a_ind[i,j,Tfights+1])<= error_threshold)
+			# v = which(abs(a_ind[i,j,]-a_ind[i,j,Tfights+1])<= error_threshold)
+			v = which(abs(a_ind[i,j,]-qual_vals[j])<=error_threshold)
 			if(length(v)>0){
 				time_ind_temp[j] = v[1]-1
 			} else{ time_ind_temp[j] = Tfights}
