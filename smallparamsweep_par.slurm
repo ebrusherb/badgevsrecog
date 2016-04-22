@@ -2,7 +2,7 @@
 
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20
-#SBATCH -t 02:00:00
+#SBATCH -t 40:00:00
 #SBATCH -J badgevsrecog_smallparamsweep
 #SBATCH -o badgevsrecog_smallparamsweep.out
 # #SBATCH --mail-type=begin

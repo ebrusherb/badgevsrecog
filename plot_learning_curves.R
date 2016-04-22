@@ -148,13 +148,14 @@ points(cat_vals,error_cat_vec[,1]+error_cat_vec[,2],type='o',col='red')
 
 plots=list()
 toplot=lapply(list(c(1,1,1),c(2,1,1),c(3,1,1),c(1,1,2),c(2,1,2),c(3,1,2)),sub2ind,v=c(xN,xwind,xcorr))
+toplot=lapply(list(c(3,1,2)),sub2ind,v=c(xN,xwind,xcorr))
 
 for(j in 1:length(toplot)){
 	i = toplot[[j]]
 	ind = ind2sub(c(xN,xwind,xcorr),i)
 	n = ind[1]
 	# c1 = ind[2]
-	w = ind[3]
+	w = ind[2]
 	c2 = ind[3]
 
 	error_ind_now1<- foreach(k=1:sim_runs,.combine='rbind') %do% {
@@ -184,7 +185,7 @@ for(j in 1:length(toplot)){
 		scale_fill_manual(values=mypal[1:3])+
 		xlab("Fights")+ylab("Error")+
 		# ggtitle(paste( "N", N_vals[n],',#',cat_vals[c1],',wind',wind_vals[w],sep=""))+	theme(legend.position="none")
-		ggtitle(paste( "N", N_vals[n],',#',cat_vals[c1],',corr',corr_vals[c2],sep=""))+	theme(legend.position="none")
+		ggtitle(paste( "N", N_vals[n],',wind',wind_vals[w],',corr',corr_vals[c2],sep=""))+	theme(legend.position="none")
 }
 multiplot(plotlist=plots,cols=2)
 
