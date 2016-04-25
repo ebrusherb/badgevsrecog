@@ -34,37 +34,40 @@ Tfights_min = 1000
 plots=list()
 	#fix perception window and vary the other parameters 
 	c1 = 2
-	####HERE HERE HERE. I migth by concatenating wrong: vectors for different N will have different lengths!	
-	error_cat_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+	error_cat_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %do% {
+		error_cat_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xN,xwind,xcorr),p)
 		n = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_cat[[n,c1,w,1,1,c2]][[k]][,Tfights]	
+		error_cat[[n,c1,w,1,1,c2]][[k]][,Tfights]	}
+		c(mean(error_cat_temp,na.rm=TRUE),sd(error_cat_temp,na.rm=TRUE))
 	}
-	error_ind_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+	error_cat_now = unname(error_cat_now)
+	error_cat_mean = error_cat_now[1,]
+	error_cat_sd = error_cat_now[2,]
+	error_ind_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %do% {
+		error_ind_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xN,xwind,xcorr),p)
 		n = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]
+		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]	}
+		c(mean(error_ind_temp,na.rm=TRUE),sd(error_ind_temp,na.rm=TRUE))
 	}
+	error_ind_now = unname(error_ind_now)
+	error_ind_mean = error_ind_now[1,]
+	error_ind_sd = error_ind_now[2,]
 	
-	error_cat_mean = colMeans(error_cat_now,na.rm=TRUE)
-	error_cat_sd = colSds(error_cat_now,na.rm=TRUE)
-	error_ind_mean = colMeans(error_ind_now,na.rm=TRUE)
-	error_ind_sd = colSds(error_ind_now,na.rm=TRUE)
 	error = data.frame(categ = error_cat_mean, indiv=error_ind_mean, groupsize=rep(N_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xN),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xN*xcorr))
-	corrandcateg = c(error$sigcorr/2,error$sigcorr/2+2)
-	corrandcateg[corrandcateg==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
-	corrandcateg[corrandcateg==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
-	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),groupsize=rep(groupsize,2),corrandcateg = as.factor(corrandcateg),window = rep(window,2)))
+	corrandtype = c(error$sigcorr/2,error$sigcorr/2+2)
+	corrandtype[corrandtype==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
+	corrandtype[corrandtype==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
+	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),groupsize=rep(groupsize,2),corrandtype = as.factor(corrandtype),window = rep(window,2)))
 	
-	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =error, colour = corrandcateg, linetype = window)) + 
+	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =error, colour = corrandtype, linetype = window)) + 
 		geom_line() + geom_point() +
 		scale_y_continuous(limits=c(0,0.5)) +
 		theme_bw() +
@@ -76,36 +79,39 @@ plots=list()
 		#fix group size and vary the other parameters
 		n=2
 		
-	error_cat_now<- foreach(p=1:prod(c(xperc,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+	error_cat_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %do% {
+		error_cat_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xperc,xwind,xcorr),p)
 		c1 = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_cat[[n,c1,w,1,1,c2]][[k]][,Tfights]	
+		error_cat[[n,c1,w,1,1,c2]][[k]][,Tfights]	}
+		c(mean(error_cat_temp,na.rm=TRUE),sd(error_cat_temp,na.rm=TRUE))
 	}
-	error_ind_now<- foreach(p=1:prod(c(xperc,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+	error_cat_now = unname(error_cat_now)
+	error_cat_mean = error_cat_now[1,]
+	error_cat_sd = error_cat_now[2,]
+	error_ind_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %do% {
+		error_ind_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xperc,xwind,xcorr),p)
 		c1 = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]
+		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]	}
+		c(mean(error_ind_temp,na.rm=TRUE),sd(error_ind_temp,na.rm=TRUE))
 	}
-	
-	error_cat_mean = colMeans(error_cat_now,na.rm=TRUE)
-	error_cat_sd = colSds(error_cat_now,na.rm=TRUE)
-	error_ind_mean = colMeans(error_ind_now,na.rm=TRUE)
-	error_ind_sd = colSds(error_ind_now,na.rm=TRUE)
+	error_ind_now = unname(error_ind_now)
+	error_ind_mean = error_ind_now[1,]
+	error_ind_sd = error_ind_now[2,]	
 	error = data.frame(categ = error_cat_mean, indiv=error_ind_mean, percwind=rep(perc_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xperc),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xperc*xcorr))
-	corrandcateg = c(error$sigcorr/2,error$sigcorr/2+2)
-	corrandcateg[corrandcateg==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
-	corrandcateg[corrandcateg==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
-	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),percwind=rep(percwind,2),corrandcateg = as.factor(corrandcateg),window = rep(window,2)))
+	corrandtype = c(error$sigcorr/2,error$sigcorr/2+2)
+	corrandtype[corrandtype==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
+	corrandtype[corrandtype==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
+	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),percwind=rep(percwind,2),corrandtype = as.factor(corrandtype),window = rep(window,2)))
 	
-	plots[[2]] = ggplot(stacked, aes(x=percwind, y =error, colour = corrandcateg, linetype = window)) + 
+	plots[[2]] = ggplot(stacked, aes(x=percwind, y =error, colour = corrandtype, linetype = window)) + 
 		geom_line() + geom_point() +
 		scale_y_continuous(limits=c(0,0.5)) +
 		theme_bw() +
@@ -120,87 +126,85 @@ multiplot(plotlist=plots,cols=2)
 plots=list()
 	#fix perception window and vary the other parameters 
 	c1 = 2
-		
-	time_cat_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+	time_cat_med<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='c') %do% {
+		time_cat_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xN,xwind,xcorr),p)
 		n = v[1]
 		w = v[2]
 		c2 = v[3]
-		time_cat[[n,c1,w,1,1,c2]][[k]]
-	}
-	error_ind_now<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+		time_cat[[n,c1,w,1,1,c2]][[k]] }
+		median(time_cat_temp)
+	} 	
+	time_ind_med<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='c') %do% {
+		time_ind_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xN,xwind,xcorr),p)
 		n = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]
-	}
+		time_ind[[n,c1,w,1,1,c2]][[k]] }
+		median(time_ind_temp)
+	} 	
 	
-	error_cat_mean = colMeans(error_cat_now,na.rm=TRUE)
-	error_cat_sd = colSds(error_cat_now,na.rm=TRUE)
-	error_ind_mean = colMeans(error_ind_now,na.rm=TRUE)
-	error_ind_sd = colSds(error_ind_now,na.rm=TRUE)
-	error = data.frame(categ = error_cat_mean, indiv=error_ind_mean, groupsize=rep(N_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xN),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xN*xcorr))
-	corrandcateg = c(error$sigcorr/2,error$sigcorr/2+2)
-	corrandcateg[corrandcateg==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
-	corrandcateg[corrandcateg==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
-	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),groupsize=rep(groupsize,2),corrandcateg = as.factor(corrandcateg),window = rep(window,2)))
+	time = data.frame(categ = log(time_cat_med), indiv=log(time_ind_med), groupsize=rep(N_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xN),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xN*xcorr))
+	corrandtype = c(error$sigcorr/2,error$sigcorr/2+2)
+	corrandtype[corrandtype==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
+	corrandtype[corrandtype==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
+	stacked = with(time,data.frame(time=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),groupsize=rep(groupsize,2),corrandtype = as.factor(corrandtype),window = rep(window,2)))
 	
-	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =error, colour = corrandcateg, linetype = window)) + 
+	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =time, colour = corrandtype, linetype = window)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=c(0,0.5)) +
+		# scale_y_continuous(limits=c(0,0.5)) +
 		theme_bw() +
+		theme(text=element_text(family="Helvetica", size=10), plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(1,2,5,4)])+
 		labs(linetype="Window", colour="") + 
-		xlab("Group size")+ylab("Error") +
+		xlab("Group size")+ylab("Log(time)") +
 		ggtitle(paste( 'Perception window = ',perc_vals[c1],sep=""))
 		
 		#fix group size and vary the other parameters
-		n=2
-		
-	error_cat_now<- foreach(p=1:prod(c(xperc,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+		n = 2
+	time_cat_med<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='c') %do% {
+		time_cat_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xperc,xwind,xcorr),p)
 		c1 = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_cat[[n,c1,w,1,1,c2]][[k]][,Tfights]	
-	}
-	error_ind_now<- foreach(p=1:prod(c(xperc,xwind,xcorr)),.combine='cbind') %:%
-		foreach(k=1:sim_runs,.combine='c') %do% {
+		time_cat[[n,c1,w,1,1,c2]][[k]] }
+		median(time_cat_temp)
+	} 	
+	time_ind_med<- foreach(p=1:prod(c(xN,xwind,xcorr)),.combine='c') %do% {
+		time_ind_temp <- foreach(k=1:sim_runs,.combine='c') %do% {
 		v = ind2sub(c(xperc,xwind,xcorr),p)
 		c1 = v[1]
 		w = v[2]
 		c2 = v[3]
-		error_ind[[n,c1,w,1,1,c2]][[k]][,Tfights]
-	}
+		time_ind[[n,c1,w,1,1,c2]][[k]] }
+		median(time_ind_temp)
+	} 	
 	
-	error_cat_mean = colMeans(error_cat_now,na.rm=TRUE)
-	error_cat_sd = colSds(error_cat_now,na.rm=TRUE)
-	error_ind_mean = colMeans(error_ind_now,na.rm=TRUE)
-	error_ind_sd = colSds(error_ind_now,na.rm=TRUE)
-	error = data.frame(categ = error_cat_mean, indiv=error_ind_mean, percwind=rep(perc_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xperc),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xperc*xcorr))
-	corrandcateg = c(error$sigcorr/2,error$sigcorr/2+2)
-	corrandcateg[corrandcateg==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
-	corrandcateg[corrandcateg==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
-	corrandcateg[corrandcateg==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
-	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),percwind=rep(percwind,2),corrandcateg = as.factor(corrandcateg),window = rep(window,2)))
+	time = data.frame(categ = log(time_cat_med), indiv=log(time_ind_med), percwind=rep(perc_vals,times=xwind*xcorr), window = as.factor(rep(rep(wind_vals,each=xperc),times=xcorr)),  sigcorr = rep((0:(xcorr-1))*xwind,each=xperc*xcorr))
+	corrandtype = c(error$sigcorr/2,error$sigcorr/2+2)
+	corrandtype[corrandtype==0] = paste('Categ, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==1] = paste('Categ, ','Corr = ',corr_vals[2],sep='')
+	corrandtype[corrandtype==2] = paste('Indiv, ','Corr = ',corr_vals[1],sep='')
+	corrandtype[corrandtype==3] = paste('Indiv, ','Corr = ',corr_vals[2],sep='')
+	stacked = with(time,data.frame(time=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xN,xwind,xcorr)))),percwind=rep(percwind,2),corrandtype = as.factor(corrandtype),window = rep(window,2)))
 	
-	plots[[2]] = ggplot(stacked, aes(x=percwind, y =error, colour = corrandcateg, linetype = window)) + 
+	plots[[2]] = ggplot(stacked, aes(x=percwind, y =time, colour = corrandtype, linetype = window)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=c(0,0.5)) +
+		# scale_y_continuous(limits=c(0,0.5)) +
 		theme_bw() +
+		theme(text=element_text(family="Helvetica", size=10), plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(1,2,5,4)])+	
 		labs(linetype="Window", colour="") + 
-		xlab("Perception window")+ylab("Error") +
+		xlab("Perception window")+ylab("Log(time)") +
 		ggtitle(paste( "Group size = ", N_vals[n],sep=""))
-		
+
+pdf(file="/Users/eleanorbrush/Desktop/Fig1.pdf",width=6.83,height=3)		
 multiplot(plotlist=plots,cols=2)
+dev.off()
 
 ## ---- plot means of error for all individuals for each sim
 layout(matrix(1:18,nrow=3,byrow=FALSE))

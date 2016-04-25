@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=30
 #SBATCH -t 40:00:00
 #SBATCH -J badgevsrecog_paramsweep
 #SBATCH -o badgevsrecog_paramsweep.out
