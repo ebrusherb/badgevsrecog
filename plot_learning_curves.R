@@ -52,11 +52,12 @@ for(i in 1:18){
 }
 
 ## ---- mean and sd of error for all individuals for all sims
-
+for( j in 1:4){
+	v = ind2sub(c(2,2),j)
+	w = v[1]
+	c2 = v[2]
 plots=list()
 toplot = lapply(1:9,ind2sub,v=c(xN,xcat))
-w = 1
-c2 = 1
 for(i in 1:length(toplot)){
 	toplot[[i]] = c(toplot[[i]],w,1,1,c2)
 }
@@ -93,7 +94,7 @@ for(j in 1:length(toplot)){
 		ggtitle(paste( "N", N_vals[n],',#',cat_vals[c1],',wind',wind_vals[w],',corr',corr_vals[c2],sep=""))+	theme(legend.position="none")
 }
 multiplot(plotlist=plots,cols=3)
-
+}
 ## ---- mean and sd of error for all individuals for all sims : effect of category number
 
 plots=list()
