@@ -72,7 +72,10 @@ for(ind in 1:P){
 	time_ind[[ind]] = L[[4]][[ind]]
 }
 
+Date <- Sys.Date()
 save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_smallparamsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+
+source('plot_summary_deepthought.R')
 
 stopCluster(cl)
 

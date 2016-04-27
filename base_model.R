@@ -231,8 +231,8 @@ dynamics <- function(){
 				time_ind_temp[j] = v[1]-1
 			} else{ time_ind_temp[j] = Tfights}
 		}
-		time_cat[i] = median(time_cat_temp,na.rm=TRUE)
-		time_ind[i] = median(time_ind_temp,na.rm=TRUE)
+		time_cat[i] = mean(time_cat_temp,na.rm=TRUE)
+		time_ind[i] = mean(time_ind_temp,na.rm=TRUE)
 	}
 	return(list(error_cat,error_ind,time_cat,time_ind))
 }
