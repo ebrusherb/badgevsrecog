@@ -1,3 +1,5 @@
+#this is now old code for generating preliminary learning curve figures
+
 library(ggplot2)
 library(RColorBrewer)
 library(parallel)

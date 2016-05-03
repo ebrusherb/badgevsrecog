@@ -1,10 +1,10 @@
 #!/bin/tcsh
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=30
-#SBATCH -t 02:00:00
-#SBATCH -J badgevsrecog_paramsweep
-#SBATCH -o badgevsrecog_paramsweep.out
+#SBATCH --cpus-per-task=20
+#SBATCH -t 40:00:00
+#SBATCH -J bvr_paramsweep
+#SBATCH -o bvr_paramsweep.out
 # #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=eleanor.brush@gmail.com

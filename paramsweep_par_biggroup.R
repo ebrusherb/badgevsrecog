@@ -1,11 +1,11 @@
- ## --- cluster set up
+## --- cluster set up
 library(parallel)
 library(foreach)
 library(doParallel)
 
 # num_cores <- detectCores()-1
 num_cores <-20
-cl <-makeCluster(num_cores)
+cl <-makeCluster(num_cores, outfile="")
 registerDoParallel(cl)
 
 source('base_model.R')
@@ -31,22 +31,22 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,75,100)
+N_vals = c(200)
 xN = length(N_vals)
-perc_vals = c(1.5,seq(1,0,by=-0.1))
+perc_vals = c(0.5) 
 xperc = length(perc_vals)
-wind_vals = c(Inf,1000,200)
+wind_vals = c(500)
 xwind = length(wind_vals)
 confus_cat_vals = c(1000)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)
-corr_vals = c(0.3,0.5,0.7,0.9)
+corr_vals = c(0.9)
 xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
 
-L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{
+L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %do%{
 	v = ind2sub(d,ind)
 	N = N_vals[v[1]]
 	perc_wind = perc_vals[v[2]]
@@ -54,7 +54,8 @@ L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),li
 	confus_prob_cat = confus_cat_vals[v[4]]
 	confus_prob_ind = confus_ind_vals[v[5]]
 	sig_qual_corr = corr_vals[v[6]]
-	L_temp = dynamics() }
+	L_temp = dynamics() 
+	}
 
 error_cat = as.list(1:P)
 dim(error_cat) = d
@@ -73,10 +74,8 @@ for(ind in 1:P){
 }
 
 Date <- Sys.Date()
-save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_smallparamsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_biggroup_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 stopCluster(cl)
-
-# source('plot_summary_deepthought.R')
 
 quit()

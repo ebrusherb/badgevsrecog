@@ -1,11 +1,11 @@
-## --- cluster set up
+ ## --- cluster set up
 library(parallel)
 library(foreach)
 library(doParallel)
 
 # num_cores <- detectCores()-1
 num_cores <-20
-cl <-makeCluster(num_cores, outfile="")
+cl <-makeCluster(num_cores)
 registerDoParallel(cl)
 
 source('base_model.R')
@@ -31,17 +31,17 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(20)
+N_vals = c(25,50,75,100)
 xN = length(N_vals)
-perc_vals = c(0.5) 
+perc_vals = c(1.5,seq(1,0,by=-0.1))
 xperc = length(perc_vals)
-wind_vals = c(500)
+wind_vals = c(Inf,1000,200)
 xwind = length(wind_vals)
 confus_cat_vals = c(1000)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)
-corr_vals = c(0.9)
+corr_vals = c(0.3,0.5,0.7,0.9)
 xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
@@ -76,5 +76,7 @@ Date <- Sys.Date()
 save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 stopCluster(cl)
+
+# source('plot_summary_deepthought.R')
 
 quit()
