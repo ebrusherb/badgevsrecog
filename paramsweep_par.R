@@ -5,7 +5,7 @@ library(doParallel)
 
 # num_cores <- detectCores()-1
 num_cores <-20
-cl <-makeCluster(num_cores)
+cl <-makeCluster(num_cores, outfile="")
 registerDoParallel(cl)
 
 source('base_model.R')
@@ -31,11 +31,11 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(200)
+N_vals = c(20)
 xN = length(N_vals)
-perc_vals = c(1,0) 
+perc_vals = c(0.5) 
 xperc = length(perc_vals)
-wind_vals = c(Inf,200)
+wind_vals = c(500)
 xwind = length(wind_vals)
 confus_cat_vals = c(1000)
 xconfus_cat = length(confus_cat_vals)

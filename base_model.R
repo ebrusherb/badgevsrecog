@@ -35,7 +35,8 @@ fixCorr = function(x1,x2,rho){ #given x1 and x2 produce new x2 with correlation 
 	if(rho!=1){
 		x2_new <- Y[ , 2] + (1 / tan(theta)) * Y[ , 1]     # final new vector
 		} else { x2_new <- Y[,1]} 
-	x2_new = x2_new + orig_means[2]
+	# x2_new = x2_new + orig_means[2] #recenter x2 at the original mean
+	x2_new = scale(x2_new,center=FALSE,scale=0.5*diff(range(x2_new)) ) #for our purposes it's useful to have the same range of x2 regardless of x1 and rho
 	return(x2_new)
 }
 
