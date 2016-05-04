@@ -27,6 +27,8 @@ file = paste(direc,files[paramsweep[which.max(totals)]],sep="") #find most recen
 
 load(file)
 
+# load('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_2016_04_28.Rdata')
+
 mypal=brewer.pal(9,'Set1')
 divpal = brewer.pal(5,'RdBu')
 

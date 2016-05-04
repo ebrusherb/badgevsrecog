@@ -245,4 +245,4 @@ pdf(file="/homes/ebrush/priv/badgevsrecog/summary_time.pdf",width=6.83,height=3)
 grid.arrange(plots[[1]],plots[[2]],legend,ncol=3,widths=c(1,1,0.5))
 dev.off()
 
-save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,file='/homes/ebrush/priv/badgevsrecog/summary_stats.Rdata')
+save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,file='/homes/ebrush/priv/badgevsrecog/summary_stats.Rdata')

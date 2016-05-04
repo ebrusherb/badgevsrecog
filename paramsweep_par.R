@@ -31,9 +31,9 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,75,100)
+N_vals = c(25,50,100)
 xN = length(N_vals)
-perc_vals = c(1.5,seq(1,0,by=-0.1))
+perc_vals = c(1.5,seq(1,0,by=-0.2))
 xperc = length(perc_vals)
 wind_vals = c(Inf,1000,200)
 xwind = length(wind_vals)

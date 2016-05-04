@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
+#SBATCH --ntasks=2
+#SBATCH --cpus-per-task=10
 #SBATCH -t 02:00:00
 #SBATCH -J bvr_paramsweep_biggroup
 #SBATCH -o bvr_paramsweep_biggroup.out

@@ -1,4 +1,4 @@
-N=20
+N=25
 qual_vals = rnorm(N, mean = 0, sd = 1) 
 sig_vals = rnorm(N, mean = 0, 1)
 sig_vals = fixCorr(qual_vals,sig_vals,sig_qual_corr)
@@ -28,6 +28,7 @@ for(i in 1:length(o)){
 cat_med = sort(cat_med)
 catnum = max(sig_cats)
 
+
 setpal = brewer.pal(9,'Set1')
 ind = (1:max(sig_cats))%%9
 ind[ind==0] =9
@@ -40,6 +41,11 @@ sig_cats = as.factor(sig_cats[o])
 ind = 1:N
 categories = data.frame(ind,sig_vals, sig_cats)
 
+confus_mat = array(0, dim=c(N,catnum)) 
+for(j in 1:N){
+	confus_mat[j,]=(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med))/sum(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med)))) 
+}
+
 # plot(sig_vals,col=palnow,ylab='Signal',xlab='',pch=20)
 # for(i in 1:length(cat_med)){abline(h=cat_med[i],col=palnow[i])}
 
@@ -50,9 +56,9 @@ plot_cats = ggplot(categories, aes(x = ind, y = sig_vals, colour = sig_cats)) +
 		scale_color_manual(values=palnow[1:catnum])+	 
 		xlab("")+ ylab("Signal") + geom_hline(yintercept = cat_med, col = palnow[1:catnum])
 		
-pdf(file='/Users/eleanorbrush/Desktop/categories.pdf',width=3.4,height=3.4)
+# pdf(file='/Users/eleanorbrush/Desktop/categories.pdf',width=3.4,height=3.4)
 print(plot_cats)
-dev.off()
+# dev.off()
 
 
 ##--- how many categories?

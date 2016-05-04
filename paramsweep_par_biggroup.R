@@ -30,7 +30,7 @@ dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
-sim_runs = 25
+sim_runs = 10
 N_vals = c(200)
 xN = length(N_vals)
 perc_vals = c(0.5) 
@@ -46,7 +46,7 @@ xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
 
-L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %do%{
+L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{
 	v = ind2sub(d,ind)
 	N = N_vals[v[1]]
 	perc_wind = perc_vals[v[2]]
