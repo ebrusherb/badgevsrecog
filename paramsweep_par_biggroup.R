@@ -30,7 +30,7 @@ dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
-sim_runs = 10
+sim_runs = 20
 N_vals = c(200)
 xN = length(N_vals)
 perc_vals = c(0.5) 

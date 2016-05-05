@@ -31,13 +31,13 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,100)
+N_vals = c(25,50,75,100)
 xN = length(N_vals)
 perc_vals = c(1.5,seq(1,0,by=-0.2))
 xperc = length(perc_vals)
 wind_vals = c(Inf,1000,200)
 xwind = length(wind_vals)
-confus_cat_vals = c(1000)
+confus_cat_vals = c(Inf)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)
@@ -72,11 +72,104 @@ for(ind in 1:P){
 	time_ind[[ind]] = L[[4]][[ind]]
 }
 
-Date <- Sys.Date()
-save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
-
 stopCluster(cl)
 
 # source('plot_summary_deepthought.R')
+
+Tfights_min = 5000
+
+## --- find average / sd of error and median of learning time across all inds / sims for each combination of parameters
+
+error_cat_stats<- foreach(p=1:P,.combine='cbind') %do% {
+		error_cat_tmp <- foreach(k=1:sim_runs,.combine='c') %do% {
+		v = ind2sub(d,p)
+		n = v[1]
+		c1 = v[2]
+		w = v[3]
+		pcat = v[4]
+		pind = v[5]
+		c2 = v[6]
+		error_cat[[n,c1,w,pcat,pind,c2]][[k]][,Tfights]	}
+		c(mean(error_cat_tmp,na.rm=TRUE),sd(error_cat_tmp,na.rm=TRUE))
+	}
+error_cat_stats = unname(error_cat_stats)
+error_cat_mean = error_cat_stats[1,]
+error_cat_sd = error_cat_stats[2,]
+
+error_ind_stats<- foreach(p=1:P,.combine='cbind') %do% {
+		error_ind_tmp <- foreach(k=1:sim_runs,.combine='c') %do% {
+		v = ind2sub(d,p)
+		n = v[1]
+		c1 = v[2]
+		w = v[3]
+		pcat = v[4]
+		pind = v[5]
+		c2 = v[6]
+		error_ind[[n,c1,w,pcat,pind,c2]][[k]][,Tfights]	}
+		c(mean(error_ind_tmp,na.rm=TRUE),sd(error_ind_tmp,na.rm=TRUE))
+	}
+error_ind_stats = unname(error_ind_stats)
+error_ind_mean = error_ind_stats[1,]
+error_ind_sd = error_ind_stats[2,]
+
+time_cat_mean<- foreach(p=1:P,.combine='c') %do% {
+		time_cat_tmp <- foreach(k=1:sim_runs,.combine='c') %do% {
+		v = ind2sub(d,p)
+		n = v[1]
+		c1 = v[2]
+		w = v[3]
+		pcat = v[4]
+		pind = v[5]
+		c2 = v[6]
+		time_cat[[n,c1,w,pcat,pind,c2]][[k]] }
+		mean(time_cat_tmp)
+	} 	
+	
+time_ind_mean<- foreach(p=1:P,.combine='c') %do% {
+		time_ind_tmp <- foreach(k=1:sim_runs,.combine='c') %do% {
+		v = ind2sub(d,p)
+		n = v[1]
+		c1 = v[2]
+		w = v[3]
+		pcat = v[4]
+		pind = v[5]
+		c2 = v[6]
+		time_ind[[n,c1,w,pcat,pind,c2]][[k]] }
+		mean(time_ind_tmp)
+	} 	
+	
+error_time = list()
+
+toplot = data.frame(n = rep(c(1,4),each=3), c1 = rep(c(2,5,5),2), w = rep(c(1,1,2),2), pcat = rep(1,6), pind = rep(1,6)) 
+
+for(q in 1:dim(toplot)[1]){
+
+	n = toplot$n[q]
+	c1 = toplot$c1[q]
+	w = toplot$w[q]
+	pcat = toplot$pcat[q]
+	pind = toplot$pind[q]
+	
+	error_cat_stats_time<- foreach(c2=c2vals,.combine='cbind') %do% {
+		error_cat_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
+			error_cat[[n,c1,w,pcat,pind,c2]][[k]][,1:Tfights_min]
+		} 
+		rbind(colMeans(error_cat_stats_time_tmp,na.rm=TRUE),colSds(error_cat_stats_time_tmp,na.rm=TRUE))
+	}
+	c2 = c2vals[2]
+	error_ind_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
+			error_ind[[n,c1,w,pcat,pind,c2]][[k]][,1:Tfights_min]
+		} 
+	error_ind_stats_time<-rbind(colMeans(error_ind_stats_time_tmp,na.rm=TRUE),colSds(error_ind_stats_time_tmp,na.rm=TRUE))
+	
+	error = data.frame(error = c(error_cat_stats_time[1,],error_ind_stats_time[1,]),sd = 0.5*c(error_cat_stats_time[2,],error_ind_stats_time[2,]),categ = as.factor(c(rep('Categ',2*Tfights_min),rep('Indiv',Tfights_min))),fights=rep(1:Tfights_min,times=3),sigcorr=as.factor(c(rep(corr_vals[c2vals],each=Tfights_min),rep(corr_vals[c2],Tfights_min))))
+	error_time[[q]] = error
+	
+	
+}
+
+Date <- Sys.Date()
+# save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 quit()

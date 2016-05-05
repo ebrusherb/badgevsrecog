@@ -112,9 +112,14 @@ dynamics <- function(){
 		cat_med = sort(cat_med)
 		categor_num[i] = max(sig_cats_temp)
 		confus_mat[[i]] = array(0, dim=c(N,categor_num[i])) #confus_mat[[i]][j,k] = prob i perceives j to be in cat k
-		for(j in 1:N){
+		if(confus_prob_cat==Inf){
+			m = matrix(1,N,categor_num[i])
+			m[lower.tri(m,diag=FALSE)] = 0 
+			m = m[sig_cats[i,],]
+			confus_mat[[i]] = m
+		} else {for(j in 1:N){
 			confus_mat[[i]][j,]=cumsum(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med))/sum(exp(-confus_prob_cat*abs(sig_vals[j]-cat_med)))) #easier to keep track of cumulative confusion probabilities
-		}
+		} }
 	}
 	
 	categor_num_max = max(categor_num)
