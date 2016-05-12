@@ -2,6 +2,7 @@
 library(parallel)
 library(foreach)
 library(doParallel)
+library(matrixStats)
 
 # num_cores <- detectCores()-1
 num_cores <-20
@@ -15,7 +16,7 @@ source('glue.R')
 
 
 ## ---- parameters -------------------------
-Tfights = 10000 #total number of fights 
+Tfights = 5000 #total number of fights 
 # N = 20 # individuals
 # perc_wind = 0.1 # difference that animals can perceive
 # memory_window = Inf #how many fights ago they can remember
@@ -37,11 +38,11 @@ perc_vals = c(1.5,seq(1,0,by=-0.2))
 xperc = length(perc_vals)
 wind_vals = c(Inf,1000,200)
 xwind = length(wind_vals)
-confus_cat_vals = c(Inf)
+confus_cat_vals = c(Inf,1000)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)
-corr_vals = c(0.3,0.5,0.7,0.9)
+corr_vals = c(0.5,0.9)
 xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
@@ -74,9 +75,10 @@ for(ind in 1:P){
 
 stopCluster(cl)
 
-# source('plot_summary_deepthought.R')
 
 Tfights_min = 5000
+c2vals = c(1,2)
+xcorr2 = length(c2vals)
 
 ## --- find average / sd of error and median of learning time across all inds / sims for each combination of parameters
 
@@ -170,6 +172,6 @@ for(q in 1:dim(toplot)[1]){
 
 Date <- Sys.Date()
 # save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
-save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,Tfights,sim_runs,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 quit()

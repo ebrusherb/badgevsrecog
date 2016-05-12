@@ -4,7 +4,7 @@ library(foreach)
 library(doParallel)
 
 # num_cores <- detectCores()-1
-num_cores <-20
+num_cores <-30
 cl <-makeCluster(num_cores, outfile="")
 registerDoParallel(cl)
 
