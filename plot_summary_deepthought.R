@@ -158,7 +158,7 @@ plots=list()
 	
 	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =time, colour = windandtype, linetype = sigcorr)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(900,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) + scale_x_continuous(breaks=N_vals) + 
+		scale_y_continuous(limits=log(c(500,4500)),breaks=log(c(500,1000,2000,4000)),labels=c(500,1000,2000,4000)) + scale_x_continuous(breaks=N_vals) + 
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10) ,plot.margin=unit(c(0,0,0,0),"cm"),legend.position="none") + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+scale_linetype_manual(values=c(3,1)) +
@@ -190,7 +190,7 @@ plots=list()
 	
 	plots[[2]] = ggplot(stacked, aes(x=percwind, y =time, colour = windandtype, linetype = sigcorr)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(900,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) +
+		scale_y_continuous(limits=log(c(500,4500)),breaks=log(c(500,1000,2000,4000)),labels=c(500,1000,2000,4000)) +
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10),plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+	scale_linetype_manual(values=c(3,1)) +
