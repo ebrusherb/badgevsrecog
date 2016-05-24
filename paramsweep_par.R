@@ -5,7 +5,7 @@ library(doParallel)
 library(matrixStats)
 
 # num_cores <- detectCores()-1
-num_cores <-20
+num_cores <-10
 cl <-makeCluster(num_cores)
 registerDoParallel(cl)
 
@@ -16,7 +16,7 @@ source('glue.R')
 
 
 ## ---- parameters -------------------------
-Tfights = 5000 #total number of fights 
+Tfights = 10000 #total number of fights 
 # N = 20 # individuals
 # perc_wind = 0.1 # difference that animals can perceive
 # memory_window = Inf #how many fights ago they can remember
@@ -32,13 +32,13 @@ error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,75,100)
+N_vals = c(25,50,100,200)
 xN = length(N_vals)
 perc_vals = c(1.5,seq(1,0,by=-0.2))
 xperc = length(perc_vals)
-wind_vals = c(Inf,1000,200)
+wind_vals = c(Inf,500)
 xwind = length(wind_vals)
-confus_cat_vals = c(Inf,1000)
+confus_cat_vals = c(Inf)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)

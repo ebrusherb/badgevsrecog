@@ -4,7 +4,7 @@ library(foreach)
 library(doParallel)
 
 # num_cores <- detectCores()-1
-num_cores <-30
+num_cores <-10
 cl <-makeCluster(num_cores, outfile="")
 registerDoParallel(cl)
 
@@ -30,14 +30,14 @@ dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
-sim_runs = 20
+sim_runs = 25
 N_vals = c(200)
 xN = length(N_vals)
 perc_vals = c(0.5) 
 xperc = length(perc_vals)
 wind_vals = c(500)
 xwind = length(wind_vals)
-confus_cat_vals = c(1000)
+confus_cat_vals = c(Inf)
 xconfus_cat = length(confus_cat_vals)
 confus_ind_vals = c(0)
 xconfus_ind = length(confus_ind_vals)

@@ -104,25 +104,26 @@ plots = list()
 			error_ind_mean_tmp[p] = error_ind_mean[i]
 		}
 		
-	error = data.frame(categ = error_cat_mean_tmp, indiv=error_ind_mean_tmp, percwind=rep(perc_vals,times=xw*xcorr2), window =(rep(rep(0:(xw-1),each=xperc),times=xcorr2)) ,  sigcorr = as.factor(rep(corr_vals[c2vals],each=xperc*xw)))
-	windandtype = rep(error$window,times=2)+rep(c(0,2),each=xperc*xw*xcorr2)
-	windandtype[windandtype==0] = paste('Categ, ','Wind = ',wind_vals[wvals[1]],sep='')
-	windandtype[windandtype==1] = paste('Categ, ','Wind = ',wind_vals[wvals[2]],sep='')
-	windandtype[windandtype==2] = paste('Indiv, ','Wind = ',wind_vals[wvals[1]],sep='')
-	windandtype[windandtype==3] = paste('Indiv, ','Wind = ',wind_vals[wvals[2]],sep='')
-	stacked = with(error,data.frame(error=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xperc,xw,xcorr2)))),percwind=rep(percwind,2),windandtype = as.factor(windandtype),sigcorr = rep(sigcorr,2)))
-	stacked=stacked[-intersect(which(stacked$categ=='indiv'),which(stacked$sigcorr==corr_vals[c2vals[1]])),]
+	error = data.frame(categ = error_cat_mean_tmp, indiv=error_ind_mean_tmp, percwind=rep(perc_vals,times=xw*xcorr2), window =(rep(wind_vals[wvals],each=xperc,times=xcorr2)) ,  sigcorr = as.factor(rep(corr_vals[c2vals],each=xperc*xw)))
+	indmean = c(mean(error_ind_mean_tmp[error$window==wind_vals[wvals[1]]]),mean(error_ind_mean_tmp[error$window==wind_vals[wvals[2]]]))
+	error$window[error$window==wind_vals[wvals[1]]] = paste('Categ, ','Wind = ',wind_vals[wvals[1]],sep='')
+	error$window[error$window==wind_vals[wvals[2]]] = paste('Categ, ','Wind = ',wind_vals[wvals[2]],sep='')
+	error$window=as.factor(error$window)
+	indivwindow=as.factor(c(paste('Indiv, ','Wind = ',wind_vals[wvals[1]],sep=''),paste('Indiv, ','Wind = ',wind_vals[wvals[2]],sep='')))
+
 		
-	plots[[2]] = ggplot(stacked, aes(x=percwind, y =error, colour = windandtype, linetype = sigcorr)) + 
+	plots[[2]] = ggplot(error, aes(x=percwind, y =categ, colour = window, linetype = sigcorr)) + 
+		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[1],yend=indmean[1],color=indivwindow[1])) + 
+		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[2],yend=indmean[2],color=indivwindow[2])) +
 		geom_line() + geom_point() +
 		scale_y_continuous(limits=c(0,0.5)) +
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10) ,plot.title=element_text(size=10),plot.margin=unit(c(0,0,0,0),"cm")) + 
-		scale_color_manual(values=divpal[c(2,1,4,5)])+	 scale_linetype_manual(values=c(3,1)) +
+		scale_color_manual(values=divpal[c(2,1,4,5)]) +	 scale_linetype_manual(values=c(3,1)) +
 		labs(linetype="Corr", colour="") + 
 		xlab(expression(paste("Perception window, ",delta,sep='')))+ylab("Error") +
-		ggtitle(paste( "N = ", N_vals[n],sep=""))
-		
+		ggtitle(paste( "N = ", N_vals[n],sep="")) 
+				
 	 legend <- get_legend(plots[[2]])
 	plots[[2]] = plots[[2]] + theme(legend.position='none')
 
@@ -133,6 +134,10 @@ grid.arrange(plots[[1]],plots[[2]],legend,ncol=3,widths=c(1,1,0.5))
 dev.off()
 
 ##---- learning time as a function of group size and perc vals
+low = floor(min(log(c(range(time_cat_mean),range(time_ind_mean))/500,base=2)))
+high = ceiling(max(log(c(range(time_cat_mean),range(time_ind_mean))/500,base=2)))
+ybreaks= 500*(2^(low:high))
+
 plots=list()
 	#fix perception window and vary the other parameters 
 	c1 = 5
@@ -158,7 +163,7 @@ plots=list()
 	
 	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =time, colour = windandtype, linetype = sigcorr)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(500,4500)),breaks=log(c(500,1000,2000,4000)),labels=c(500,1000,2000,4000)) + scale_x_continuous(breaks=N_vals) + 
+		scale_y_continuous(limits=log(range(ybreaks)),breaks=log(ybreaks),labels=ybreaks) + scale_x_continuous(breaks=N_vals) + 
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10) ,plot.margin=unit(c(0,0,0,0),"cm"),legend.position="none") + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+scale_linetype_manual(values=c(3,1)) +
@@ -179,18 +184,19 @@ plots=list()
 			time_ind_mean_tmp[p] = time_ind_mean[i]
 		}	
 	
-	time = data.frame(categ = log(time_cat_mean_tmp), indiv=log(time_ind_mean_tmp), percwind=rep(perc_vals,times=xw*xcorr2),window =(rep(rep(0:(xw-1),each=xperc),times=xcorr2)) ,  sigcorr = as.factor(rep(corr_vals[c2vals],each=xperc*xw)))
-	windandtype = rep(time$window,times=2)+rep(c(0,2),each=xperc*xw*xcorr2)
-	windandtype[windandtype==0] = paste('Categ, ','Wind = ',wind_vals[wvals[1]],sep='')
-	windandtype[windandtype==1] = paste('Categ, ','Wind = ',wind_vals[wvals[2]],sep='')
-	windandtype[windandtype==2] = paste('Indiv, ','Wind = ',wind_vals[wvals[1]],sep='')
-	windandtype[windandtype==3] = paste('Indiv, ','Wind = ',wind_vals[wvals[2]],sep='')
-	stacked = with(time,data.frame(time=c(categ,indiv),categ=factor(rep(c('categ','indiv'),each=prod(c(xperc,xw,xcorr2)))),percwind=rep(percwind,2),windandtype = as.factor(windandtype),sigcorr = rep(sigcorr,2)))
-	stacked=stacked[-intersect(which(stacked$categ=='indiv'),which(stacked$sigcorr==corr_vals[c2vals[1]])),]
+	time = data.frame(categ = log(time_cat_mean_tmp), indiv=log(time_ind_mean_tmp), percwind=rep(perc_vals,times=xw*xcorr2),window =(rep(wind_vals[wvals],each=xperc,times=xcorr2)),  sigcorr = as.factor(rep(corr_vals[c2vals],each=xperc*xw)))
 	
-	plots[[2]] = ggplot(stacked, aes(x=percwind, y =time, colour = windandtype, linetype = sigcorr)) + 
+	indmean = log(c(mean(time_ind_mean_tmp[time$window==wind_vals[wvals[1]]]),mean(time_ind_mean_tmp[time$window==wind_vals[wvals[2]]])))
+	time$window[error$window==wind_vals[wvals[1]]] = paste('Categ, ','Wind = ',wind_vals[wvals[1]],sep='')
+	time$window[error$window==wind_vals[wvals[2]]] = paste('Categ, ','Wind = ',wind_vals[wvals[2]],sep='')
+	time$window=as.factor(error$window)
+	indivwindow=as.factor(c(paste('Indiv, ','Wind = ',wind_vals[wvals[1]],sep=''),paste('Indiv, ','Wind = ',wind_vals[wvals[2]],sep='')))
+	
+	plots[[2]] = ggplot(time, aes(x=percwind, y =categ, colour = window, linetype = sigcorr)) + 
+		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[1],yend=indmean[1],color=indivwindow[1])) + 
+		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[2],yend=indmean[2],color=indivwindow[2])) +
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(500,4500)),breaks=log(c(500,1000,2000,4000)),labels=c(500,1000,2000,4000)) +
+		scale_y_continuous(limits=log(range(ybreaks)),breaks=log(ybreaks),labels=ybreaks) +
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10),plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+	scale_linetype_manual(values=c(3,1)) +

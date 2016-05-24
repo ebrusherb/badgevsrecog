@@ -68,7 +68,7 @@ P = prod(d)
 c2vals = c(1,2)
 xcorr2 = length(c2vals)
 
-wvals = c(1,3)
+wvals = c(1,2)
 xw = length(wvals)
 
 Tfights = Tfights+1
