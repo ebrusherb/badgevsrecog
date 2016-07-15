@@ -2,6 +2,7 @@
 library(parallel)
 library(foreach)
 library(doParallel)
+library(matrixStats)
 
 # num_cores <- detectCores()-1
 num_cores <-10

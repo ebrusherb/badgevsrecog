@@ -25,22 +25,22 @@ Tfights = 10000 #total number of fights
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
 # sig_qual_corr = 0.5 #correlation between quality and signal
-learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
+learn_rate = 0.25 #how much the quality of the opponent affects the new assessment
 learn_noise = 0.01 #how noisy an updated assessment is
 dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,100,200)
+N_vals = c(50)
 xN = length(N_vals)
 perc_vals = c(1.5,seq(1,0,by=-0.2))
 xperc = length(perc_vals)
-wind_vals = c(Inf,500)
+wind_vals = c(Inf)
 xwind = length(wind_vals)
-confus_cat_vals = c(Inf)
+confus_cat_vals = c(Inf,1000,500,100)
 xconfus_cat = length(confus_cat_vals)
-confus_ind_vals = c(0)
+confus_ind_vals = c(0,0.1,0.5)
 xconfus_ind = length(confus_ind_vals)
 corr_vals = c(0.5,0.9)
 xcorr = length(corr_vals)
@@ -142,7 +142,7 @@ time_ind_mean<- foreach(p=1:P,.combine='c') %do% {
 	
 error_time = list()
 
-toplot = data.frame(n = rep(c(1,4),each=3), c1 = rep(c(2,5,5),2), w = rep(c(1,1,2),2), pcat = rep(1,6), pind = rep(1,6)) 
+toplot = data.frame(n = rep(c(1,1),each=3), c1 = rep(c(2,5,xperc),2), w = rep(c(1,1,1),2), pcat = rep(c(1,3),each=3), pind = rep(1,6))
 
 for(q in 1:dim(toplot)[1]){
 
