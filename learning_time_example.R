@@ -1,67 +1,40 @@
-## ---- functions ----------------------
-
-win_prob <- function(q){ #probability of A winning given qualities of A and B
-	d = q[1]-q[2] #differences in qualities
-	p = exp(dominance*d)/(exp(dominance*d)+1) #a sigmoidal function that gives probability of A winning 
-	return(p)
-}
-
-update <- function(a, q){ # given current assessment a and true quality q, update to new assessment
-	if(learn_noise == 0 ){
-		noise = 0
-	} else {
-		noise = rnorm(1, mean =0, sd = learn_noise)}
-	if(!is.na(a)){
-			anew =(1- learn_rate) * a + learn_rate*q + noise
-		} else{
-			a = qual_mean + rnorm(1, mean =0 , sd = .2)
-			anew = (1- learn_rate) * a + learn_rate*q + noise
-		}
-	return(anew)
-}
-
-fixCorr = function(x1,x2,rho){ #given x1 and x2 produce new x2 with correlation of rho with x1
-	n = length(x1)
-	theta <- acos(rho)             # corresponding angle
-	X     <- cbind(x1, x2)         # matrix
-	Xctr  <- scale(X, center=TRUE, scale=FALSE)   # centered columns (mean 0)
-	orig_means <- colMeans(X)
-	Id   <- diag(n)                               # identity matrix
-	Q    <- qr.Q(qr(Xctr[ , 1, drop=FALSE]))      # QR-decomposition, just matrix Q #this is also just Xctr[,1]/ norm of Xctr[,1]
-	P    <- tcrossprod(Q)          # = Q Q'       # projection onto space defined by x1
-	x2o  <- (Id-P) %*% Xctr[ , 2]                 # x2ctr made orthogonal to x1ctr
-	Xc2  <- cbind(Xctr[ , 1], x2o)                # bind to matrix
-	Y    <- Xc2 %*% diag(1/sqrt(colSums(Xc2^2)))  # scale columns to length 1
-	if(rho!=1){
-		x2_new <- Y[ , 2] + (1 / tan(theta)) * Y[ , 1]     # final new vector
-		} else { x2_new <- Y[,1]} 
-	# x2_new = x2_new + orig_means[2] #recenter x2 at the original mean
-	x2_new = scale(x2_new,center=FALSE,scale=0.5*diff(range(x2_new)) ) #for our purposes it's useful to have the same range of x2 regardless of x1 and rho
-	return(x2_new)
-}
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+library(reshape)
 
 ## ---- parameters -------------------------
-Tfights = 5000 #total number of fights 
-N = 75 # individuals
-perc_wind = 0 # difference that animals can perceive
-memory_window = Inf #how many fights ago they can remember
-confus_prob_cat = Inf #maximum probability of misidentifying categories, which decreases with dissimilarity
-confus_prob_ind = 0 #probability of misidentifying individuals
+Tfights = 1000 #total number of fights 
+# N = 20 # individuals
+# perc_wind = 0.1 # difference that animals can perceive
+# memory_window = Inf #how many fights ago they can remember
+# confus_prob_cat = 1000 #maximum probability of misidentifying categories, which decreases with dissimilarity
+# confus_prob_ind = 0 #probability of misidentifying individuals
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
-sig_qual_corr = 0.9 #correlation between quality and signal
-learn_rate = 0.25 #how much the quality of the opponent affects the new assessment
+# sig_qual_corr = 0.5 #correlation between quality and signal
+learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
 learn_noise = 0.01 #how noisy an updated assessment is
 dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
+qual_vals_tot = list()
+a_cat_tot = list()
+a_ind_tot = list()
+error_cat_tot =list()
+error_ind_tot =list()
+time_cat_tot = list()
+time_ind_tot = list()
 
-##---- the_whole_process ---------------------------
-#set up group with quality values and signal values: 
+w = 1
 
-dynamics <- function(){
-
-	qual_vals = array(data = NA, dim = N) # quality values
+N = 10
+sig_qual_corr = 0.7
+perc_wind = 0.5
+memory_window = Inf
+confus_prob_cat = Inf
+confus_prob_ind = 0
+qual_vals = array(data = NA, dim = N) # quality values
 	# #option: one animal in each of N bins
 	# qual_vals = seq(0, 1, by = 1/N) 
 	# #option: uniformly distributed quality values
@@ -134,7 +107,6 @@ dynamics <- function(){
 	
 	last_fights_cat = array(Inf, dim=c(N,categor_num_max)) #last time each individual thought it encountered each category
 	last_fights_ind = array(Inf, dim=c(N,N)) #last time each individual thought it encountered each category
-	last_fights_ind[diag(last_fights_ind)] = 0
 	
 	a_cat_bycat = array(NA, dim=c(N,categor_num_max,Tfights+1)) #assessment by each individual of each other individual, using categories
 	a_cat_byind = array(NA, dim=c(N,N,Tfights+1)) #assessment by each indivdual of each category
@@ -158,57 +130,43 @@ dynamics <- function(){
 			for(i in 1:N){
 				perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num[i]),ncol=categor_num[i])>confus_mat[[i]])+1 #use confus_mat to see which category perceptions get switched to
 			}
+			# if(sum(perc_cats[1,]-sig_cats[1,])!=0){print(rbind(perc_cats[1,],sig_cats[1,]))}
 				# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
 			
-			last_fights_cat = last_fights_cat+1
-			new_a_cat_bycat = a_cat_bycat[,,t] 
-			new_a_cat_bycat[last_fights_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
-			
 			last_fights_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
-			last_fights_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0			
+			last_fights_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0
+			new_as_cat_bycat = a_cat_bycat[,,t] #if you weren't involved in the fight your assessment doesn't change
+			new_as_cat_bycat[last_fights_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
+			a_cat_bycat[,,t+1] = new_as_cat_bycat
+			a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t+1] = update(a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]],t],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
+			a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t+1] = update(a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]],t],qual_vals[pair[1]])
 			
-			new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]] = update(new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
-			new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]] = update(new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]],qual_vals[pair[1]])
-			
-			new_a_cat_byind = array(NA,dim=c(N,N))
-			diag(new_a_cat_byind) = diag(a_cat_byind[,,t])
+			new_as_cat_byind = array(NA,dim=c(N,N))
 			for(i in 1:N){
-				new_a_cat_byind[i,setdiff(1:N,i)]=new_a_cat_bycat[i,perc_cats[i,setdiff(1:N,i)]] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories
+				new_as_cat_byind[i,]=a_cat_bycat[i,perc_cats[i,],t+1] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories
 			}
-			# # learning about self
-			# new_a_cat_byind[pair[1],pair[1]] = update(new_a_cat_byind[pair[1],pair[1]],qual_vals[pair[1]])
-			# new_a_cat_byind[pair[2],pair[2]] = update(new_a_cat_byind[pair[2],pair[2]],qual_vals[pair[2]])
+			a_cat_byind[,,t+1] = new_as_cat_byind
 			
-			a_cat_bycat[,,t+1] = new_a_cat_bycat
-			a_cat_byind[,,t+1] = new_a_cat_byind
-
+			last_fights_cat = last_fights_cat+1
 		
 		#learning about the identity of one's opponent:
-			perc_pair = rev(pair)  
+			draw = runif(2,0,1) #random numbers to generate confusion events
+			perc_pair = pair  
+			if(draw[1]<confus_prob_ind){
+				perc_pair[1] = sample(setdiff(1:N,pair[1]),1) #with low probability draw a different individual that the focal thinks it's interacting with
+			}
+			if(draw[2]<confus_prob_ind){
+				perc_pair[2] = sample(setdiff(1:N,pair[2]),1)
+			}
 			
-			prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
-			prob_vec[which(setdiff(1:N,pair[1])==pair[2])] = 1-confus_prob_ind
-			perc_pair[1] = sample(setdiff(1:N,pair[1]),1,prob=prob_vec) #with low probability draw a different individual that the focal thinks it's interacting with
-			
-			prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
-			prob_vec[which(setdiff(1:N,pair[2])==pair[1])] = 1-confus_prob_ind
-			perc_pair[2] = sample(setdiff(1:N,pair[2]),1,prob=prob_vec)
-			
+			last_fights_ind[pair[1],perc_pair[2]] = 0
+			last_fights_ind[pair[2],perc_pair[1]] = 0
+			new_as_ind = a_ind[,,t] #if you weren't involved in the fight your assessment doesn't change
+			new_as_ind[last_fights_ind>memory_window] = NA #if you fought more than memory_window fights ago you forget your assessments
+			a_ind[,,t+1] = new_as_ind
+			a_ind[pair[1],perc_pair[2],t+1] = update(a_ind[pair[1],perc_pair[2],t],qual_vals[pair[2]]) #each animal updates its assessment of the individual it perceives based on the quality it experiences
+			a_ind[pair[2],perc_pair[1],t+1] = update(a_ind[pair[2],perc_pair[1],t],qual_vals[pair[1]])
 			last_fights_ind = last_fights_ind+1
-			new_a_ind = a_ind[,,t] 
-			new_a_ind[last_fights_ind>memory_window] = NA #if you fought more than memory_window fights ago you forget your assessments
-			
-			last_fights_ind[pair[1],c(pair[1],perc_pair[1])] = 0
-			last_fights_ind[pair[2],c(pair[2],perc_pair[2])] = 0
-
-			new_a_ind[pair[1],perc_pair[1]] = update(new_a_ind[pair[1],perc_pair[1]],qual_vals[pair[2]]) #each animal updates its assessment of the individual it perceives based on the quality it experiences
-			new_a_ind[pair[2],perc_pair[2]] = update(new_a_ind[pair[2],perc_pair[2]],qual_vals[pair[1]])
-			
-			# #learning about self
-			# new_a_ind[pair[1],pair[1]] = update(new_a_ind[pair[1],pair[1]],qual_vals[pair[1]])
-			# new_a_ind[pair[2],pair[2]] = update(new_a_ind[pair[2],pair[2]],qual_vals[pair[2]])
-
-			a_ind[,,t+1] = new_a_ind
 	}
 	
 	#how well did they learn?
@@ -223,6 +181,8 @@ dynamics <- function(){
 	# #costs of losing? while fights are random, these don't depend on the recognition system, but we'll need two if we consider strategic fights.
 	# losing_costs_cat = array(NA, dim=c(N,Tfights+1))
 	# losing_costs_ind = array(NA, dim=c(N,Tfights+1))
+	time_cat_temp = array(NA,dim=c(N,N))
+		time_ind_temp = array(NA, dim=c(N,N))
 	for(i in 1:N){
 		for(t in 1:(Tfights+1)){
 	
@@ -239,22 +199,61 @@ dynamics <- function(){
 				# highrank_ind[i,t] = sum(a_ind[,i,t],na.rm=TRUE) /sum(!is.na(a_ind[,i,t]))
 				# }
 		}
-		time_cat_temp = array(NA,dim=N)
-		time_ind_temp = array(NA, dim=N)
+		# time_cat_temp = array(NA,dim=N)
+		# time_ind_temp = array(NA, dim=N)
 		for(j in setdiff(1:N,i)){
 			# v = which(abs(a_cat_byind[i,j,]-a_cat_byind[i,j,Tfights+1])<= error_threshold)
 			v = which(abs(a_cat_byind[i,j,]-qual_vals[j])<=error_threshold)
 			if(length(v)>0){
-				time_cat_temp[j] = v[1]-1
-			} else{ time_cat_temp[j] = Tfights}
+				time_cat_temp[i,j] = v[1]-1
+			} else{ time_cat_temp[i,j] = Tfights}
 			# v = which(abs(a_ind[i,j,]-a_ind[i,j,Tfights+1])<= error_threshold)
 			v = which(abs(a_ind[i,j,]-qual_vals[j])<=error_threshold)
-			if(length(v)>0){
-				time_ind_temp[j] = v[1]-1
-			} else{ time_ind_temp[j] = Tfights}
+			if(length(v)>0){ 
+				time_ind_temp[i,j] = v[1]-1
+			} else{ time_ind_temp[i,j] = Tfights}
 		}
-		time_cat[i] = mean(time_cat_temp,na.rm=TRUE)
-		time_ind[i] = mean(time_ind_temp,na.rm=TRUE)
+		time_cat[i] = median(time_cat_temp,na.rm=TRUE)
+		time_ind[i] = median(time_ind_temp,na.rm=TRUE)
 	}
-	return(list(error_cat,error_ind,time_cat,time_ind))
+	
+qual_vals_tot[[w]] = qual_vals
+error_cat_tot[[w]] = error_cat
+error_ind_tot[[w]] = error_ind
+a_cat_tot[[w]] = a_cat_byind
+a_ind_tot[[w]] = a_ind
+time_cat_tot[[w]] = time_cat_temp
+time_ind_tot[[w]] = time_ind_temp
+
+pal = brewer.pal(N-1,'Set1')
+
+Ylim = c(0,0.7)
+
+w = 1
+i = 1
+error_ex = abs(a_cat_tot[[w]][i,,]-matrix(rep(qual_vals_tot[[w]],Tfights+1),nrow=N,byrow=FALSE))
+error_ex = error_ex[-i,]
+error_mean = colMeans(error_ex,na.rm=TRUE)
+error_ex = rbind(error_ex,error_mean)
+error_ex = data.frame(error=as.vector(t(error_ex)),fights=rep(1:(Tfights+1),N),ind=as.factor(rep(c(setdiff(1:N,i),'mean'),each=Tfights+1)))
+for(k in setdiff(1:N,i)){
+	tmp = data.frame(error=c(Ylim[1],Ylim[2]),fights=rep(time_cat_tot[[w]][i,k],2),ind=as.factor(rep(k,2)))
+	error_ex = rbind(error_ex,tmp)
 }
+tmp = tmp = data.frame(error=c(Ylim[1],Ylim[2]),fights=rep(mean(time_cat_tot[[w]][i,],na.rm=TRUE),2),ind=as.factor(rep('mean',2)))
+error_ex = rbind(error_ex,tmp)
+
+
+ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) + 
+	geom_line() + 
+	theme_bw() + 
+	scale_y_continuous(limits=Ylim) +
+	theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10),plot.margin=unit(c(0,0.25,0,0),"cm"),legend.position='none') +
+	xlab("Fights")+ylab("Error") +
+	scale_color_manual(values=c(pal,'black'))+
+	geom_segment(aes(x=1,xend=Tfights+1,y=error_threshold,yend=error_threshold,color='mean')) 
+
+pdf(file="/Users/eleanorbrush/Desktop/learning_time_example.pdf",width=5,height=3)		
+# multiplot(plotlist=plots,cols=3)
+print(ex)
+dev.off()

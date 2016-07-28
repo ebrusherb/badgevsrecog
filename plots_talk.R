@@ -29,10 +29,10 @@ xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
 
-c2vals = c(2,4)
+c2vals = c(1,2)
 xcorr2 = length(c2vals)
 
-wvals = c(1,3)
+wvals = c(1,2)
 xw = length(wvals)
 
 
@@ -74,10 +74,10 @@ plots = list()
 	plots[[1]] = plots[[1]] + theme(legend.position='none')
 
 	
-pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_error_groupsize.pdf",width=5,height=3)		
+# pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_error_groupsize.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=3)
 grid.arrange(plots[[1]],legend,ncol=2,widths=c(1,0.5))
-dev.off()
+# dev.off()
 		
 		#fix group size and vary the other parameters
 		n = 3
@@ -115,10 +115,10 @@ dev.off()
 	plots[[2]] = plots[[2]] + theme(legend.position='none')
 
 		
-pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_error_percwindow.pdf",width=5,height=3)		
+# pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_error_percwindow.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=3)
 grid.arrange(plots[[2]],legend,ncol=2,widths=c(1,0.5))
-dev.off()
+# dev.off()
 
 ##---- learning time as a function of group size and perc vals
 plots=list()
@@ -146,7 +146,7 @@ plots=list()
 	
 	plots[[1]] = ggplot(stacked, aes(x=groupsize, y =time, colour = windandtype, linetype = sigcorr)) + 
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(900,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) + scale_x_continuous(breaks=N_vals) + 
+		scale_y_continuous(limits=log(c(700,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) + scale_x_continuous(breaks=N_vals) + 
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10) ,plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+scale_linetype_manual(values=c(3,1)) +
@@ -158,10 +158,10 @@ plots=list()
 	plots[[1]] = plots[[1]] + theme(legend.position='none')
 
 	
-pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_time_groupsize.pdf",width=5,height=3)		
+# pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_time_groupsize.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=3)
 grid.arrange(plots[[1]],legend,ncol=2,widths=c(1,0.5))
-dev.off()
+# dev.off()
 		
 		#fix group size and vary the other parameters
 		n = 3
@@ -188,7 +188,7 @@ dev.off()
 		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[1],yend=indmean[1],color=indivwindow[1])) + 
 		geom_segment(aes(x=perc_vals[1],xend=perc_vals[xperc],y=indmean[2],yend=indmean[2],color=indivwindow[2])) +
 		geom_line() + geom_point() +
-		scale_y_continuous(limits=log(c(900,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) +
+		scale_y_continuous(limits=log(c(700,10000)),breaks=log(c(1000,2000,4000,8000)),labels=c(1000,2000,4000,8000)) +
 		theme_bw() +
 		theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10),plot.margin=unit(c(0,0,0,0),"cm")) + 
 		scale_color_manual(values=divpal[c(2,1,4,5)])+	scale_linetype_manual(values=c(3,1)) +
@@ -200,8 +200,8 @@ dev.off()
 	plots[[2]] = plots[[2]] + theme(legend.position='none')
 	
 
-pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_time_percwindow.pdf",width=5,height=3)		
+# pdf(file="/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/Copenhagen symposium/summary_time_percwindow.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=2)
 grid.arrange(plots[[2]],legend,ncol=2,widths=c(1,0.5))
-dev.off()
+# dev.off()
 
