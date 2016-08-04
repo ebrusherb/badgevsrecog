@@ -7,23 +7,16 @@ win_prob <- function(q){ #probability of A winning given qualities of A and B
 }
 
 update <- function(a, q){ # given current assessment a and true quality q, update to new assessment
-	if(learn_noise == 0 ){
-		noise = 0
-	} else {
-		noise = rnorm(1, mean =0, sd = learn_noise)}
-	a[is.na(a)] = qual_mean + rnorm(1, mean =0 , sd = 0.2)
+	noise = rnorm(1, mean =0, sd = learn_noise)
+	a[is.na(a)] = rnorm(sum(is.na(a)), mean = 0, sd =0.2)
 	anew =(1- learn_rate) * a + learn_rate*q + noise
 	return(anew)
 }
 
-update_obs <-function(a,d){ # given current assessments and true difference in qualities, update to new assessment, d = a1-a2
-	if(obs_noise==0){
-		noise = 0
-	} else {
-		noise = rnorm(1,mean = 0, sd = obs_noise)
-	}
+update_obs <-function(a,d){ # given current assessments and true difference in qualities, update to new assessment, d = a1-a2	
+	noise = rnorm(1,mean = 0, sd = obs_noise)
 	a[is.na(a)] = rnorm(sum(is.na(a)), mean = 0, sd =0.2)
-	dnew = (1-obs_learn_rate)*diff(rev(a))+obs_learn_rate*d + noise
+	dnew = (1-obs_learn_rate)*diff(rev(a))+ obs_learn_rate*d + noise
 	a1new = mean(a)+dnew/2
 	a2new = mean(a)-dnew/2
 	return(c(a1new,a2new))
@@ -50,28 +43,33 @@ fixCorr = function(x1,x2,rho){ #given x1 and x2 produce new x2 with correlation 
 }
 
 ## ---- parameters -------------------------
-Tfights = 100 #total number of fights 
+Tfights = 500 #total number of fights 
 N = 20 # individuals
-perc_wind = 1 # difference that animals can perceive
+perc_wind = 0 # difference that animals can perceive
 memory_window = 200 #how many fights ago they can remember
-confus_prob_cat = 500 #maximum probability of misidentifying categories, which decreases with dissimilarity
-confus_prob_ind = 0.1 #probability of misidentifying individuals
+confus_prob_cat = Inf #maximum probability of misidentifying categories, which decreases with dissimilarity
+confus_prob_ind = 0 #probability of misidentifying individuals
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
-sig_qual_corr = 0.5 #correlation between quality and signal
-learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
-learn_noise = 0.01 #how noisy an updated assessment is
-obs_noise = 0.1 # how noisy observational learning is
-obs_learn_rate = 0.1
-p_obs = 0.05
+sig_qual_corr = 1 #correlation between quality and signal
+learn_rate = 1 #how much the quality of the opponent affects the new assessment
+learn_noise = 0.0 #how noisy an updated assessment is
+obs_learn_rate = 1 #how much true difference affects assessment of difference
+obs_noise = 0.0 # how noisy observational learning is
+p_obs = 1 #probability of observing a fight you're not engaged in
 dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
 
 
 ##---- the_whole_process ---------------------------
-#set up group with quality values and signal values: 
 
 dynamics_obs <- function(){
+	
+	self_memory_window = Inf
+	memory_mat = array(memory_window,dim=c(N,N))
+	diag(memory_mat) = self_memory_window
+	
+	#set up group with quality values and signal values: 
 
 	qual_vals = array(data = NA, dim = N) # quality values
 	# #option: one animal in each of N bins
@@ -81,10 +79,7 @@ dynamics_obs <- function(){
 	# #option: lognormally distributed quality values
 	# qual_vals = exp(rnorm(N, mean = 0, sd = qual_sd)) 
 	#option: normally distributed quality values
-	qual_vals = rnorm(N, mean = qual_mean, sd = qual_sd) 
-	
-	# #matrix of columns of quality values
-	# qual_mat = matrix(rep(qual_vals,N), ncol=N, byrow=TRUE) 
+	qual_vals = rnorm(N, mean = qual_mean, sd = qual_sd) 	
 	
 	sig_vals = array(data = NA, dim = N) # signal values
 	#option: signals are correlated with quality 
@@ -166,62 +161,45 @@ dynamics_obs <- function(){
 		observers = setdiff(1:N,pair)
 		observers = observers[as.logical(rbinom(N-2,1,p_obs))]
 		
-		#learning about the signal of one's opponent:
-			draw = matrix(runif(N*N,0,1),nrow=N) #random numbers to generate confusion events
-			perc_cats = array(NA, dim = c(N,N)) #each individual's perception of every other's category
-			for(i in 1:N){
-				perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num[i]),ncol=categor_num[i])>confus_mat[[i]])+1 #use confus_mat to see which category perceptions get switched to
-			}
-				# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories
-				
-			last_update_cat = last_update_cat+1
-			new_a_cat_bycat = a_cat_bycat[,,t] 			
-			new_a_cat_bycat[last_update_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago							
-			last_update_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
-			last_update_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0
-													
-			new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]] = update(new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
-			new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]] = update(new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]],qual_vals[pair[1]])
-			
-			#observation			
-			if(length(observers)>0){
-				for(o in observers){
-					last_update_cat[o,perc_cats[o,pair]]=0 #here, observer remembers interacting with observed regardless of whether they're in the same category. if i move inside the if statement, only remember if he updates his opinion
-					if(diff(perc_cats[o,pair])!=0){
-						new_a_cat_bycat[o,perc_cats[o,pair]] = update_obs(new_a_cat_bycat[o,perc_cats[o,pair]],diff(qual_vals[pair]))
-					}
-				}
-			}
-						
-			new_a_cat_byind = array(NA,dim=c(N,N))
-			diag(new_a_cat_byind) = diag(a_cat_byind[,,t])
-			for(i in 1:N){
-				new_a_cat_byind[i,setdiff(1:N,i)]=new_a_cat_bycat[i,perc_cats[i,setdiff(1:N,i)]] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories
-			}
-			new_a_cat_byind[pair[1],pair[1]] = update(new_a_cat_byind[pair[1],pair[1]],qual_vals[pair[1]])
-			new_a_cat_byind[pair[2],pair[2]] = update(new_a_cat_byind[pair[2],pair[2]],qual_vals[pair[2]])
-			
-			a_cat_bycat[,,t+1] = new_a_cat_bycat
-			a_cat_byind[,,t+1] = new_a_cat_byind
+		#perception of individuals
+		
+		last_update_ind = last_update_ind+1
+		new_a_ind = a_ind[,,t] 
+		new_a_ind[last_update_ind>memory_mat] = NA #if you fought more than memory_window fights ago you forget your assessments
+		
+		perc_pair = rev(pair)  
+		
+		prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
+		prob_vec[which(setdiff(1:N,pair[1])==pair[2])] = 1-confus_prob_ind
+		perc_pair[1] = sample(setdiff(1:N,pair[1]),1,prob=prob_vec) #with low probability draw a different individual that the focal thinks it's interacting with
+		
+		prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
+		prob_vec[which(setdiff(1:N,pair[2])==pair[1])] = 1-confus_prob_ind
+		perc_pair[2] = sample(setdiff(1:N,pair[2]),1,prob=prob_vec)			
 
+		last_update_ind[pair[1],c(pair[1],perc_pair[1])] = 0
+		last_update_ind[pair[2],c(pair[2],perc_pair[2])] = 0
+		
+		#perception of categories
+		
+		last_update_cat = last_update_cat+1 #everyone last update time increments by 1	
+		new_a_cat_bycat = a_cat_bycat[,,t] 			
+		new_a_cat_bycat[last_update_cat>memory_window] = NA #you forget your assessments of the categories you fought more than memory_window fights ago
+		
+		new_a_cat_byind = a_cat_byind[,,t]
+		diag(new_a_cat_byind)[which(diag(last_update_ind)>diag(memory_mat))] = NA
+		
+		draw = matrix(runif(N*N,0,1),nrow=N) #random numbers to generate confusion events
+		perc_cats = array(NA, dim = c(N,N)) #each individual's perception of every other's category
+		for(i in 1:N){
+			perc_cats[i,] = rowSums(matrix(rep(draw[i,],categor_num[i]),ncol=categor_num[i])>confus_mat[[i]])+1 #use confus_mat to see which category perceptions get switched to
+		}
+			# perc_cats = matrix(rep(sig_cats,N),nrow=N,byrow=TRUE) #no switching categories	
+											
+		last_update_cat[pair[1],perc_cats[pair[1],pair[2]]] = 0 #each animal thinks it just fought with the category it perceived
+		last_update_cat[pair[2],perc_cats[pair[2],pair[1]]] = 0					
 								
-		#learning about the identity of one's opponent:
-			perc_pair = rev(pair)  
-			
-			prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
-			prob_vec[which(setdiff(1:N,pair[1])==pair[2])] = 1-confus_prob_ind
-			perc_pair[1] = sample(setdiff(1:N,pair[1]),1,prob=prob_vec) #with low probability draw a different individual that the focal thinks it's interacting with
-			
-			prob_vec = array(confus_prob_ind/(N-2),dim=N-1)
-			prob_vec[which(setdiff(1:N,pair[2])==pair[1])] = 1-confus_prob_ind
-			perc_pair[2] = sample(setdiff(1:N,pair[2]),1,prob=prob_vec)
-			
-			last_update_ind = last_update_ind+1
-			new_a_ind = a_ind[,,t] 
-			new_a_ind[last_update_ind>memory_window] = NA #if you fought more than memory_window fights ago you forget your assessments
-			
-			last_update_ind[pair[1],c(pair[1],perc_pair[1])] = 0
-			last_update_ind[pair[2],c(pair[2],perc_pair[2])] = 0					
+		#learning about the identity of one's opponent:											
 						
 			new_a_ind[pair[1],perc_pair[1]] = update(new_a_ind[pair[1],perc_pair[1]],qual_vals[pair[2]]) #each animal updates its assessment of the individual it perceives based on the quality it experiences
 			new_a_ind[pair[1],pair[1]] = update(new_a_ind[pair[1],pair[1]],qual_vals[pair[1]])
@@ -238,11 +216,35 @@ dynamics_obs <- function(){
 					prob_vec[which(setdiff(1:N,c(o,perc_pair[1]))==pair[2])] = 1-confus_prob_ind
 					perc_pair[2] = sample(setdiff(1:N,c(o,perc_pair[1])),1,prob=prob_vec) #with low probability draw a different individual that the focal thinks is second individual	
 					last_update_ind[o,perc_pair]=0 
-					new_a_ind[o,perc_pair] = update_obs(new_a_ind[o,perc_pair],diff(qual_vals[pair]))
+					new_a_ind[o,perc_pair] = update_obs(new_a_ind[o,perc_pair],diff(rev(qual_vals[pair])))
 				}
 			}	
 
 			a_ind[,,t+1] = new_a_ind
+			
+			#learning about the signal of one's opponent:											
+													
+			new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]] = update(new_a_cat_bycat[pair[1],perc_cats[pair[1],pair[2]]],qual_vals[pair[2]]) #each animal updates its assessment of the category it perceives based on the quality it experiences
+			new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]] = update(new_a_cat_bycat[pair[2],perc_cats[pair[2],pair[1]]],qual_vals[pair[1]])
+			
+			#observation			
+			if(length(observers)>0){
+				for(o in observers){
+					last_update_cat[o,perc_cats[o,pair]]=0 #here, observer remembers interacting with observed regardless of whether they're in the same category. if i move inside the if statement, only remember if he updates his opinion
+					if(diff(perc_cats[o,pair])!=0){
+						new_a_cat_bycat[o,perc_cats[o,pair]] = update_obs(new_a_cat_bycat[o,perc_cats[o,pair]],diff(rev(qual_vals[pair])))
+					}
+				}
+			}
+						
+			for(i in 1:N){
+				new_a_cat_byind[i,setdiff(1:N,i)]=new_a_cat_bycat[i,perc_cats[i,setdiff(1:N,i)]] #each animal assigns quality values to individuals based on its sloppy assignment of individuals to categories				
+			}
+			new_a_cat_byind[pair[1],pair[1]] = update(new_a_cat_byind[pair[1],pair[1]],qual_vals[pair[1]])
+			new_a_cat_byind[pair[2],pair[2]] = update(new_a_cat_byind[pair[2],pair[2]],qual_vals[pair[2]])
+			
+			a_cat_bycat[,,t+1] = new_a_cat_bycat
+			a_cat_byind[,,t+1] = new_a_cat_byind
 	}
 	
 	#how well did they learn?

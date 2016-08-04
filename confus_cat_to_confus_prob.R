@@ -2,7 +2,7 @@ source('base_model.R')
 N=N_vals[n]
 sig_qual_corr = corr_vals[c2]
 perc_wind = 0
-runs = 50
+runs = 500
 confus_prob_vals = confus_cat_vals
 
 for(r in 1:length(confus_cat_vals)){

@@ -9,7 +9,7 @@ num_cores <-10
 cl <-makeCluster(num_cores)
 registerDoParallel(cl)
 
-source('base_model.R')
+source('model.R')
 source('ind2sub.R')
 source('glue.R')
 
@@ -25,18 +25,19 @@ Tfights = 10000 #total number of fights
 qual_mean = 0
 qual_sd = 0.5 #standard deviation of quality distribution 
 # sig_qual_corr = 0.5 #correlation between quality and signal
-learn_rate = 0.25 #how much the quality of the opponent affects the new assessment
+learn_rate = 0.2 #how much the quality of the opponent affects the new assessment
 learn_noise = 0.01 #how noisy an updated assessment is
 dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
+observation_happens = FALSE
 
 ##---- parameter_sweep -----------------------
 sim_runs = 25
-N_vals = c(25,50,75,100)
+N_vals = seq(20,100,by=10)
 xN = length(N_vals)
-perc_vals = c(1.5,seq(1,0,by=-0.2))
+perc_vals = c(0.4)
 xperc = length(perc_vals)
-wind_vals = c(Inf,1000,200)
+wind_vals = c(Inf,seq(2000,0,by=-250))
 xwind = length(wind_vals)
 confus_cat_vals = c(Inf)
 xconfus_cat = length(confus_cat_vals)
@@ -46,6 +47,10 @@ corr_vals = c(0.5,0.9)
 xcorr = length(corr_vals)
 d = c(xN,xperc,xwind,xconfus_cat,xconfus_ind,xcorr)
 P = prod(d)
+Tfights_min = 5000
+c2vals = c(1,2)
+xcorr2 = length(c2vals)
+toplot = data.frame(n = rep(c(1,4),each=3), c1 = rep(c(1,1,1),2), w = rep(c(1,1,3),2), pcat = rep(1,6), pind = rep(1,6))
 
 L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{
 	v = ind2sub(d,ind)
@@ -55,7 +60,7 @@ L <- foreach(ind = 1:P, .combine='glue',.multicombine=TRUE, .init=list(list(),li
 	confus_prob_cat = confus_cat_vals[v[4]]
 	confus_prob_ind = confus_ind_vals[v[5]]
 	sig_qual_corr = corr_vals[v[6]]
-	L_temp = dynamics() }
+	L_temp = dynamics_full() }
 
 error_cat = as.list(1:P)
 dim(error_cat) = d
@@ -75,10 +80,6 @@ for(ind in 1:P){
 
 stopCluster(cl)
 
-
-Tfights_min = 5000
-c2vals = c(1,2)
-xcorr2 = length(c2vals)
 
 ## --- find average / sd of error and median of learning time across all inds / sims for each combination of parameters
 
@@ -142,8 +143,6 @@ time_ind_mean<- foreach(p=1:P,.combine='c') %do% {
 	
 error_time = list()
 
-toplot = data.frame(n = rep(c(1,4),each=3), c1 = rep(c(2,5,5),2), w = rep(c(1,1,3),2), pcat = rep(1,6), pind = rep(1,6))
-
 for(q in 1:dim(toplot)[1]){
 
 	n = toplot$n[q]
@@ -172,6 +171,6 @@ for(q in 1:dim(toplot)[1]){
 
 Date <- Sys.Date()
 # save(error_cat=error_cat,error_ind=error_ind,time_cat=time_cat,time_ind=time_ind,N_vals=N_vals,perc_vals=perc_vals,wind_vals=wind_vals,confus_cat_vals=confus_cat_vals,confus_ind_vals=confus_ind_vals,corr_vals=corr_vals,file=paste('/homes/ebrush/priv/badgevsrecog/badgevsrecog_paramsweep_par_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
-save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,Tfights,sim_runs,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_diffparams_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(confus_cat_vals,confus_ind_vals,corr_vals,d,error_cat_mean,error_ind_mean,N_vals,perc_vals,time_cat_mean,time_ind_mean,wind_vals,error_time,toplot,Tfights,sim_runs,observation_happens,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_diffparams_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 quit()
