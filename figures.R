@@ -153,7 +153,12 @@ source('confus_cat_to_confus_prob.R')
 w = xwind
 c1 = xperc
 error_p = error[intersect(which(error$w==wind_vals[w]),intersect(which(error$N==N_vals[n]),which(error$c1==perc_vals[c1]))),]
-error_p$pcat =recode(error_p$pcat,"confus_cat_vals[1]=confus_prob_vals[1];confus_cat_vals[2]=confus_prob_vals[2];confus_cat_vals[3]=confus_prob_vals[3];confus_cat_vals[4]=confus_prob_vals[4]")
+recode_vec = c()
+for(i in 1:length(confus_cat_vals)){
+	recode_vec = paste(recode_vec,'confus_cat_vals[',i,']=confus_prob_vals[',i,'];',sep="")
+}
+recode_vec = substr(recode_vec,start=1,stop=nchar(recode_vec)-1)
+error_p$pcat =recode(error_p$pcat,recode_vec)
 error_p = with(error_p,data.frame(error=c(categ,indiv),p=c(pcat,pind),corr=as.factor(rep(c2,times=2)),categ=factor(rep(c('Badge','Indiv'),each=dim(error_p)[1]))))
 error_p = error_p[-intersect(which(error_p$categ=='Indiv'),which(error_p$corr==corr_vals[1])),]
 wo_error = subset(error_p,select=-error)
@@ -180,7 +185,7 @@ plots.time[[4]] = param_plot(time_p, aes(x=p, y = time, colour = categ, linetype
 	xlab("Probability of recategorizing")+ylab("") + theme(legend.position='none')	
 	
 	
-pdf(file="/Users/eleanorbrush/Desktop/parameters.pdf",width=6.8,height=8)		
+# pdf(file="/Users/eleanorbrush/Desktop/parameters.pdf",width=6.8,height=8)		
 # grid.arrange(plots.error[[1]],legend,plots.error[[2]],plots.error[[3]],plots.error[[4]],ncol=2,widths=c(1,0.1))
 grid.newpage()
 pushViewport(viewport(layout=grid.layout(4,3,heights=rep(1,4)/4,widths=c(0.45,0.45,0.1))))
@@ -194,14 +199,14 @@ print(plots.time[[3]], vp=viewport(layout.pos.row=3,layout.pos.col=2))
 print(plots.time[[4]], vp=viewport(layout.pos.row=4,layout.pos.col=2))
 legend$vp=viewport(layout.pos.row=1,layout.pos.col=3)
 grid.draw(legend)
-dev.off()
+# dev.off()
 
 ##contours of comparison
 plots.diff=list()
 c1=4
 pcat = 2
 pind = 2
-c2 = 2
+c2 = 1
 
 error_Nw = error[intersect(which(error$c1==perc_vals[c1]),intersect(which(error$pcat==confus_cat_vals[1]),which(error$pind==confus_ind_vals[1]))),]
 error_Nw = error_Nw[-which(error_Nw$w==wind_vals[xwind]),]
@@ -246,9 +251,9 @@ plots.diff[[2]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=diff))+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')
 
-pdf(file="/Users/eleanorbrush/Desktop/comparison.pdf",width=6.8,height=3)		
+# pdf(file="/Users/eleanorbrush/Desktop/comparison.pdf",width=6.8,height=3)		
 grid.arrange(plots.diff[[1]],plots.diff[[2]],contour_leg,ncol=3,widths=c(0.45,0.45,0.1))	
-dev.off()
+# dev.off()
 
 ###########costs 
 n = which(N_vals==50)
