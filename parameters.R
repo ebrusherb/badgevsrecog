@@ -9,7 +9,7 @@ confus_cat_vals = rev(c(100,500,1000,Inf))
 confus_ind_vals = c(0,0.05,0.1,0.4)
 corr_vals = c(0.5,0.9)
 
-N_vals = c(20,30)
+# N_vals = c(20,30)
 
 xN = length(N_vals)
 xperc = length(perc_vals)
@@ -28,7 +28,7 @@ pobs = 0
 #vary group size
 parameters = rbind(parameters,data.frame(N=rep(N_vals,times=xcorr),c1=rep(c1,xN*xcorr),w=rep(w,xN*xcorr),pcat=rep(pcat,xN*xcorr),pind=rep(pind,xN*xcorr),c2=rep(corr_vals,each=xN),pobs = rep(pobs,xN*xcorr)))
 
-# # # #vary memory window
+# #vary memory window
 parameters = rbind(parameters,data.frame(N=rep(N,xwind*xcorr),c1=rep(c1,xwind*xcorr),w=rep(wind_vals,times=xcorr),pcat=rep(pcat,xwind*xcorr),pind=rep(pind,xwind*xcorr),c2=rep(corr_vals,each=xwind),pobs=rep(pobs,xwind*xcorr)))
 
 #vary perception window

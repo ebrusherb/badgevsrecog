@@ -38,38 +38,35 @@ wind_cost<-function(wind){
 	return(cost)
 }
 
-combined = combine_files("/Users/eleanorbrush/Desktop/summary_stats_diffparams_2016_07_29.Rdata","/Users/eleanorbrush/Desktop/summary_stats_2016_07_29.Rdata","/Users/eleanorbrush/Desktop/summary_stats_2016_08_03.Rdata","/Users/eleanorbrush/Desktop/summary_stats_diffparams_2016_08_03.Rdata")
-variables = combined[[1]]
-variables = variables[-which(variables$w==0),]
-error = combined[[2]]
-error = error[-which(error$w==0),]
-time = combined[[3]]
-time = time[-which(time$w==0),]
-time[,1:2] = log(time[,1:2],base=10)
-
 mypal=brewer.pal(9,'Set1')
 divpal = brewer.pal(5,'RdBu')
 
-N_vals = sort(unique(variables$N))
+load("/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/summary_stats_2016_08_06.Rdata")
+error = cbind(data.frame(categ=as.vector(error_cat_mean),indiv=as.vector(error_ind_mean)),parameters)
+time = cbind(data.frame(categ=log(as.vector(time_cat_mean),base=10),indiv=log(as.vector(time_ind_mean),base=10)),parameters)
+
+N_vals = sort(unique(parameters$N))
 xN = length(N_vals)
-perc_vals = sort(unique(variables$c1))
+perc_vals = sort(unique(parameters$c1))
 xperc = length(perc_vals)
-wind_vals = sort(unique(variables$w))
+wind_vals = sort(unique(parameters$w))
 xwind = length(wind_vals)
-confus_cat_vals = sort(unique(variables$pcat),decreasing=TRUE)
+confus_cat_vals = sort(unique(parameters$pcat),decreasing=TRUE)
 xconfus_cat = length(confus_cat_vals)
-confus_ind_vals = sort(unique(variables$pind))
+confus_ind_vals = sort(unique(parameters$pind))
 xconfus_ind = length(confus_ind_vals)
-corr_vals = sort(unique(variables$c2))
+corr_vals = sort(unique(parameters$c2))
 xcorr = length(corr_vals)
 
 n = which(N_vals==50)
-c1 = 4
+c1 = 3
 w = which(wind_vals==1000)
 c2 = 2
+pcat = 1 
+pind = 1
 error_max = 0.42
-time_min = 2.8
-time_max = 3.92
+time_min = min(time[,1:2])-0.1
+time_max = max(time[,1:2])+0.1
 time_labels = c(500,1000,2000,4000,8000)
 time_breaks = log(time_labels,base=10)
 
@@ -102,7 +99,8 @@ plots.time[[1]] = param_plot(time_N, aes(x=N, y = time, colour = categ, linetype
 error_w = error[intersect(which(error$c1==perc_vals[c1]),intersect(which(error$N==N_vals[n]),intersect(which(error$pcat==confus_cat_vals[1]),which(error$pind==confus_ind_vals[1])))),]
 error_w = with(error_w,data.frame(error=c(categ,indiv),w=rep(w,2),corr=as.factor(rep(c2,2)),categ=factor(rep(c('Badge','Indiv'),each=dim(error_w)[1]))))
 error_w = error_w[-intersect(which(error_w$categ=='Indiv'),which(error_w$corr==corr_vals[1])),]
-error_w = error_w[-which(error_w$w==Inf),]
+if(is.element(Inf,wind_vals)){
+error_w = error_w[-which(error_w$w==Inf),]}
 
 plots.error[[2]] = param_plot(error_w, aes(x=w, y = error, colour = categ, linetype = corr),0,error_max) + 	
 	xlab("Memory window")+ ylab("") + theme(legend.position='none')
@@ -110,7 +108,8 @@ plots.error[[2]] = param_plot(error_w, aes(x=w, y = error, colour = categ, linet
 time_w = time[intersect(which(time$c1==perc_vals[c1]),intersect(which(time$N==N_vals[n]),intersect(which(time$pcat==confus_cat_vals[1]),which(time$pind==confus_ind_vals[1])))),]
 time_w = with(time_w,data.frame(time=c(categ,indiv),w=rep(w,2),corr=as.factor(rep(c2,2)),categ=factor(rep(c('Badge','Indiv'),each=dim(time_w)[1]))))
 time_w = time_w[-intersect(which(time_w$categ=='Indiv'),which(time_w$corr==corr_vals[1])),]
-time_w = time_w[-which(time_w$w==Inf),]
+if(is.element(Inf,wind_vals)){
+time_w = time_w[-which(time_w$w==Inf),]}
 
 plots.time[[2]] = param_plot(time_w, aes(x=w, y = time, colour = categ, linetype = corr),time_min,time_max,ybreaks=time_breaks,ylabels=time_labels) + 	
 	xlab("Memory window")+ ylab("") + theme(legend.position='none')
@@ -130,7 +129,7 @@ colnames(error_c1)[2:4]=colnames(wo_error)
 error_c1$c1=as.numeric(levels(error_c1$c1))[error_c1$c1]
 
 plots.error[[3]] = param_plot(error_c1, aes(x=c1, y = error, colour = categ, linetype = corr),0,error_max) + 	
-	xlab("Category size")+ ylab("") + theme(legend.position='none')
+	xlab("Category width")+ ylab("") + theme(legend.position='none')
 
 time_c1 = time[intersect(which(time$w==wind_vals[w]),intersect(which(time$N==N_vals[n]),intersect(which(time$pcat==confus_cat_vals[1]),which(time$pind==confus_ind_vals[1])))),]
 time_c1 = with(time_c1,data.frame(time=c(categ,indiv),c1=rep(c1,2),corr=as.factor(rep(c2,2)),categ=factor(rep(c('Badge','Indiv'),each=dim(time_c1)[1]))))
@@ -145,13 +144,11 @@ colnames(time_c1)[2:4]=colnames(wo_time)
 time_c1$c1=as.numeric(levels(time_c1$c1))[time_c1$c1]
 
 plots.time[[3]] = param_plot(time_c1, aes(x=c1, y = time, colour = categ, linetype = corr),time_min,time_max,ybreaks=time_breaks,ylabels=time_labels) + 	
-	xlab("Category size")+ ylab("") + theme(legend.position='none')
+	xlab("Category width")+ ylab("") + theme(legend.position='none')
 
 
 #probability of switching perception 
 source('confus_cat_to_confus_prob.R')
-w = xwind
-c1 = xperc
 error_p = error[intersect(which(error$w==wind_vals[w]),intersect(which(error$N==N_vals[n]),which(error$c1==perc_vals[c1]))),]
 recode_vec = c()
 for(i in 1:length(confus_cat_vals)){
@@ -167,6 +164,7 @@ new_facs = agg_mean[,1]
 error_p = cbind(data.frame(error=agg_mean[,2]),matrix(unlist(strsplit(toString(unique(new_facs)),',')),ncol=3,byrow=TRUE))
 colnames(error_p)[2:4]=colnames(wo_error)
 error_p$p=as.numeric(levels(error_p$p))[error_p$p]
+
 plots.error[[4]] = param_plot(error_p, aes(x=p, y = error, colour = categ, linetype = corr),0,error_max) + 	
 	xlab("Probability of recategorizing")+ylab("") + theme(legend.position='none')	
 	
@@ -202,23 +200,19 @@ grid.draw(legend)
 # dev.off()
 
 ##contours of comparison
-plots.diff=list()
-c1=4
-pcat = 2
-pind = 2
+plots.diff.Nw=list()
+plots.diff.cw = list()
 c2 = 1
 
 error_Nw = error[intersect(which(error$c1==perc_vals[c1]),intersect(which(error$pcat==confus_cat_vals[1]),which(error$pind==confus_ind_vals[1]))),]
 error_Nw = error_Nw[-which(error_Nw$w==wind_vals[xwind]),]
 error_Nw$diff = error_Nw$categ-error_Nw$indiv
-error_Nw_subset = error_Nw[which(error_Nw$c2==corr_vals[c2]),]
 
 error_cw = error[intersect(which(error$N==N_vals[n]),intersect(which(error$pcat==confus_cat_vals[pcat]),which(error$pind==confus_ind_vals[pind]))),]
 error_cw = error_cw[-which(error_cw$w==wind_vals[xwind]),]
 error_cw$diff = error_cw$categ-error_cw$indiv
-error_cw_subset = error_cw[which(error_cw$c2==corr_vals[c2]),]
 
-M = max(max(error_Nw_subset$diff),max(error_cw_subset$diff))
+M = max(max(error_Nw$diff),max(error_cw$diff))
 m = -M
 cut_breaks = seq(m,M,length.out=11)
 d  = diff(cut_breaks)[1]
@@ -226,33 +220,32 @@ legend_data = data.frame(z = cut(seq(m+d/2,M-d/2,length.out = 22),breaks=cut_bre
 legend_data = data.frame(z = seq(m,M,length.out = 22), x = 1:22,y = 1:22)
 legend_breaks = c(round(m,1),0,round(M,1))
 legend_labels = legend_breaks
-legend = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
+legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
 
-contour_leg = get_legend(legend)
+contour_leg = get_legend(legend_plot)
 
-plots.diff[[1]] = ggplot(error_Nw_subset,aes(x=N,y=w,z=diff))+	
-	geom_tile(aes(fill = diff)) + 
-	scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),guide="colorbar")+
-	theme_bw() +
-	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Group size') + ylab('Memory window')
-
-# test = ggplot(error_cw_subset,aes(x=c1,y=w,z=diff))+	
-	# geom_tile(aes(fill = diff_bin))+stat_contour(breaks=seq(-0.3,0.3,by=0.025))+		scale_fill_manual(values=divpal[as.numeric(sort(unique(error_cw_subset$diff_bin)))])+
-	# theme(legend.position='none')
-# grid.arrange(test,legend_leg,ncol=2)	
-
-plots.diff[[2]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=diff))+	
-	geom_tile(aes(fill = diff)) + 
-	scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),guide="colorbar")+
-	theme_bw() +
-	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Category width') + ylab('Memory window')
-
+for(c2 in 1:xcorr){
+	error_Nw_subset = error_Nw[which(error_Nw$c2==corr_vals[c2]),]
+	error_cw_subset = error_cw[which(error_cw$c2==corr_vals[c2]),]
+	
+	plots.diff.Nw[[c2]] = ggplot(error_Nw_subset,aes(x=N,y=w,z=diff))+	
+		geom_tile(aes(fill = diff)) + 
+		scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),guide="colorbar")+
+		theme_bw() +
+		theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
+		scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+		xlab('Group size') + ylab('Memory window')
+	
+	plots.diff.cw[[c2]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=diff))+	
+		geom_tile(aes(fill = diff)) + 
+		scale_fill_gradientn(colours=rev(divpal),limits=c(m,M),guide="colorbar")+
+		theme_bw() +
+		theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
+		scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+		xlab('Category width') + ylab('Memory window')
+}
 # pdf(file="/Users/eleanorbrush/Desktop/comparison.pdf",width=6.8,height=3)		
-grid.arrange(plots.diff[[1]],plots.diff[[2]],contour_leg,ncol=3,widths=c(0.45,0.45,0.1))	
+grid.arrange(plots.diff.Nw[[1]],plots.diff.cw[[1]],contour_leg,plots.diff.Nw[[2]],plots.diff.cw[[2]],ncol=3,widths=c(0.45,0.45,0.1))	
 # dev.off()
 
 ###########costs 

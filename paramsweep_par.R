@@ -6,7 +6,7 @@ library(matrixStats)
 Date <- Sys.Date()
 
 # num_cores <- detectCores()-1
-num_cores <-1
+num_cores <-10
 cl <-makeCluster(num_cores)
 registerDoParallel(cl)
 

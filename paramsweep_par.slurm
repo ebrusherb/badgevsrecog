@@ -2,7 +2,7 @@
 
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20
-#SBATCH -t 50:00:00
+#SBATCH -t 80:00:00
 #SBATCH -J bvr_paramsweep
 #SBATCH -o bvr_paramsweep.out
 # #SBATCH --mail-type=begin
