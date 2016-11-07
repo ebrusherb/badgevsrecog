@@ -5,6 +5,7 @@ sig_vals = fixCorr(qual_vals,sig_vals,sig_qual_corr)
 sig_cats_temp = array(NA, dim = N)
 
 perc_wind = 1
+confus_prob_cat = 1000
 
 left = 1:N
 cat_now = 1
@@ -13,9 +14,9 @@ while(length(left)>0){
 	if(length(left)>1){
 	first = sample(left,size=1)} else{ first = left}
 	to_categorize = which(abs(sig_vals[left]-sig_vals[first])<=perc_wind/2)
-	if(length(which(exp(-confus_prob_cat*abs(sig_vals[left[to_categorize]]-median(sig_vals[left[to_categorize]])))==0))>0){
+	if(length(which(exp(-confus_prob_cat*abs(sig_vals[left[to_categorize]]-median(sig_vals[left[to_categorize]])))==0))>0 && confus_prob_cat!=Inf ){
 				to_categorize = to_categorize[-which(exp(-confus_prob_cat*abs(sig_vals[left[to_categorize]]-median(sig_vals[left[to_categorize]])))==0)]
-				print('problem fixed')
+				# print('problem fixed')
 			}
 	sig_cats_temp[left[to_categorize]] = cat_now
 	cat_now = cat_now+1

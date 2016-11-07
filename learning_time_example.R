@@ -253,7 +253,7 @@ ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) +
 	scale_color_manual(values=c(pal,'black'))+
 	geom_segment(aes(x=1,xend=Tfights+1,y=error_threshold,yend=error_threshold,color='mean')) 
 
-pdf(file="/Users/eleanorbrush/Desktop/learning_time_example.pdf",width=5,height=3)		
+# pdf(file="/Users/eleanorbrush/Desktop/learning_time_example.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=3)
 print(ex)
-dev.off()
+# dev.off()

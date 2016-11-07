@@ -1,8 +1,8 @@
 #!/bin/tcsh
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20
-#SBATCH -t 80:00:00
+#SBATCH --cpus-per-task=10
+#SBATCH -t 90:00:00
 #SBATCH -J bvr_paramsweep
 #SBATCH -o bvr_paramsweep.out
 # #SBATCH --mail-type=begin

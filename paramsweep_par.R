@@ -34,17 +34,11 @@ obs_noise = 0.02 # how noisy observational learning is
 # p_obs = 0.2 #probability of observing a fight you're not engaged in
 dominance = 2 #how quickly the probability switches from A winning to A losing
 error_threshold = 0.2
-observation_happens = FALSE
+observation_happens = TRUE
 
 ##---- parameter_sweep -----------------------
 source('parameters.R')
 xparam = dim(parameters)[1]
-
-c2vals = c(1,2)
-xcorr2 = length(c2vals)
-toplot = c(which(as.character(parameters$Group.1)==paste(20,1.4,1500,Inf,0,0.5,0,sep=','))
-,which(as.character(parameters$Group.1)==paste(20,.4,1500,Inf,0,0.5,0,sep=',')),which(as.character(parameters$Group.1)==paste(20,.4,500,Inf,0,0.5,0,sep=',')),which(as.character(parameters$Group.1)==paste(50,1.4,1500,Inf,0,0.5,0,sep=',')),which(as.character(parameters$Group.1)==paste(50,.4,1500,Inf,0,0.5,0,sep=',')),which(as.character(parameters$Group.1)==paste(50,.4,500,Inf,0,0.5,0,sep=',')))
-
 
 L <- foreach(i = 1:xparam, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{	
 	N = parameters$N[i]
@@ -101,25 +95,27 @@ error_time = list()
 
 save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,sim_runs,observation_happens,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
-for(p in 1:length(toplot)){
-	
-	error_cat_stats_time<- foreach(c2=c2vals,.combine='cbind') %do% {
-		error_cat_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
-			error_cat[[toplot[p]]][[k]][,1:Tfights_min]
-		} 
-		rbind(colMeans(error_cat_stats_time_tmp,na.rm=TRUE),colSds(error_cat_stats_time_tmp,na.rm=TRUE))
+if(length(toplot)>0){
+	for(p in 1:dim(toplot)[1]){
+		
+		error_cat_stats_time<- foreach(c2=c2vals,.combine='cbind') %do% {
+			error_cat_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
+				error_cat[[toplot[p,c2]]][[k]][,1:Tfights_min]
+			} 
+			rbind(colMeans(error_cat_stats_time_tmp,na.rm=TRUE),colSds(error_cat_stats_time_tmp,na.rm=TRUE))
+		}
+		c2 = which.max(corr_vals[c2vals])
+		error_ind_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
+				error_ind[[toplot[p,c2]]][[k]][,1:Tfights_min]
+			} 
+		error_ind_stats_time<-rbind(colMeans(error_ind_stats_time_tmp,na.rm=TRUE),colSds(error_ind_stats_time_tmp,na.rm=TRUE))
+		
+		error = data.frame(error = c(error_cat_stats_time[1,],error_ind_stats_time[1,]),sd = 0.5*c(error_cat_stats_time[2,],error_ind_stats_time[2,]),categ = as.factor(c(rep('Badge',length(c2vals)*Tfights_min),rep('Indiv',Tfights_min))),fights=rep(1:Tfights_min,times=length(c2vals)+1),sigcorr=as.factor(c(rep(corr_vals[c2vals],each=Tfights_min),rep(corr_vals[c2],Tfights_min))))
+		error_time[[p]] = error
+		
 	}
-	c2 = c2vals[2]
-	error_ind_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
-			error_ind[[toplot[p]]][[k]][,1:Tfights_min]
-		} 
-	error_ind_stats_time<-rbind(colMeans(error_ind_stats_time_tmp,na.rm=TRUE),colSds(error_ind_stats_time_tmp,na.rm=TRUE))
-	
-	error = data.frame(error = c(error_cat_stats_time,error_ind_stats_time),categ = as.factor(c(rep('Categ',length(c2vals)*Tfights_min),rep('Indiv',Tfights_min))),fights=rep(1:Tfights_min,times=length(c2vals)+1),sigcorr=as.factor(c(rep(corr_vals[c2vals],each=Tfights_min),rep(corr_vals[c2],Tfights_min))))
-	error_time[[p]] = error
-	
 }
 
-save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,sim_runs,observation_happens,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,Tfights_min,sim_runs,observation_happens,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
 
 quit()
