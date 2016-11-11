@@ -77,17 +77,17 @@ xcorr = length(corr_vals)
 p_obs_vals = sort(unique(parameters$pobs))
 xpobs = length(p_obs_vals)
 
-n = which(N_vals==50)
-c1 = 3
-w = 4
-c2 = 2
-pcat = 1 
-pind = 1
+n = which(N_vals==N)
+c1 = which(perc_vals==c1)
+w = which(wind_vals==w)
+pcat = which(confus_cat_vals==pcat)
+pind = which(confus_ind_vals==pind)
 error_max = 0.42
 time_min = min(time[,1:2])-0.1
 time_max = max(time[,1:2])+0.1
 time_labels = c(500,1000,2000,4000,8000)
 time_breaks = log(time_labels,base=10)
+
 
 
 marg = c(0.1,0.1,0,0)

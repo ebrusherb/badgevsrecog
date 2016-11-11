@@ -16,7 +16,7 @@ source('glue.R')
 
 
 ## ---- parameters -------------------------
-Tfights = 10000 #total number of fights 
+Tfights = 20000 #total number of fights 
 Tfights_min = 5000
 sim_runs = 25
 # N = 20 # individuals
@@ -38,6 +38,9 @@ observation_happens = TRUE
 
 ##---- parameter_sweep -----------------------
 source('parameters.R')
+args = commandArgs(TRUE)
+to_work_with  = strtoi(args[1], base=10L)
+parameters = parameters[chunk[[to_work_with]],]
 xparam = dim(parameters)[1]
 
 L <- foreach(i = 1:xparam, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %:% foreach(t = 1:sim_runs, .combine='glue',.multicombine=TRUE, .init=list(list(),list(),list(),list())) %dopar%{	
@@ -116,6 +119,6 @@ if(length(toplot)>0){
 	}
 }
 
-save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,Tfights_min,sim_runs,observation_happens,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,Tfights_min,sim_runs,observation_happens,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'_',to_work_with,'.Rdata',sep=''))
 
 quit()

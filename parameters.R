@@ -4,7 +4,7 @@ parameters = data.frame(N=c(),c1=c(),w=c(),pcat=c(),pind=c(),c2=c(),pobs=c())
 
 N_vals = seq(20,100,by=10)
 perc_vals = seq(0,2,by=0.25)
-wind_vals = c(seq(0,2100,by=300))
+wind_vals = c(seq(0,2100,by=300),Inf)
 confus_cat_vals = rev(c(100,500,1000,Inf))
 confus_ind_vals = c(0,0.05,0.1,0.4)
 corr_vals = c(0.5,0.9)
@@ -68,3 +68,11 @@ parameters=aggregate(parameters,by=list(facs),FUN=mean)
 toplot = with(toplot,interaction(N,c1,w,pcat,pind,c2,pobs,sep=','))
 toplot = as.vector(sapply(as.character(toplot),function(x) which(as.character(parameters$Group.1)==x)))
 toplot = matrix(toplot,ncol=length(c2vals))
+
+breaks = 10
+small = floor(dim(parameters)[1]/breaks)
+chunk = list()
+for(i in 1:(breaks-1)){
+	chunk[[i]] = ((i-1)*small+1):(i*small)
+}
+chunk[[breaks]]=((breaks-1)*small+1):dim(parameters)[1]

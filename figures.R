@@ -55,7 +55,7 @@ seqpal = rev(brewer.pal(5,'YlOrRd'))
 seqpal2 = rev(brewer.pal(5,'YlGnBu'))
 
 load("/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/summary_stats_2016_08_17.Rdata")
-source('/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/parameters.R')
+# source('/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/parameters.R')
 error = cbind(data.frame(categ=as.vector(error_cat_mean),indiv=as.vector(error_ind_mean)),parameters)
 time = cbind(data.frame(categ=log(as.vector(time_cat_mean),base=10),indiv=log(as.vector(time_ind_mean),base=10)),parameters)
 
@@ -89,6 +89,7 @@ time_breaks = log(time_labels,base=10)
 marg = c(0.1,0.1,0,0)
 textsz = 10
 
+################################
 #learning curves
 plots=list()
 
@@ -128,7 +129,7 @@ pdf(file=paste(wd,"/learning_curves.pdf",sep=""),width=6.83,height=3)
 grid.arrange(plots[[6]],plots[[5]],plots[[2]],ncol=3,widths=c(1,1,1))
 dev.off()
 
-
+#############################
 # effect of various parameters
 plots.error = list()	
 plots.time = list()
@@ -220,7 +221,7 @@ pdf(file=paste(wd,'/parameters.pdf',sep=''),width=6.8,height=4)
 grid.arrange(plots.error[[1]],plots.error[[2]],plots.error[[3]],plots.time[[1]],plots.time[[2]],plots.time[[3]],ncol=3,widths=rep(1,3)/4)
 dev.off()
 
-
+################################
 #probability of switching perception 
 source('confus_cat_to_confus_prob.R')
 
@@ -284,8 +285,8 @@ error_pobs = with(error_pobs,data.frame(error=c(categ,indiv),pobs=rep(pobs,2),c2
 error_pobs = error_pobs[-intersect(which(error_pobs$categ=='Indiv'),which(error_pobs$c2==corr_vals[1])),]
 
 plots.error[[5]] = param_plot(error_pobs, aes(x=pobs, y = error, colour = categ, linetype = c2),0,0.45) + 	
-	xlab("Prob of observing")+ ylab("Error") + theme(legend.position=c(0.43,0.97),legend.box.just = "left"
-,legend.box='horizontal',legend.key.size=unit(.13,'inch'),legend.key.width=unit(.2,'inch'),plot.margin = unit(x = marg, units = "inch"))+transparent_legend
+	xlab("Prob of observing")+ ylab("Error") + theme(legend.position=c(0.59,0.96),legend.box.just = "left"
+,legend.box='horizontal',legend.key.size=unit(.14,'inch'),legend.key.width=unit(.2,'inch'),plot.margin = unit(x = marg, units = "inch"))+transparent_legend
 
 time_pobs = time[which(with(parameters,interaction(N,w,c1,pcat,pind,sep=','))==paste(N_vals[n],wind_vals[w-2],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),]
 
@@ -479,13 +480,20 @@ cost_N$c1_eff[which(cost_N$categ=='Indiv')]=0
 cost_N = cbind(10^(as.vector(unlist(time[which(with(parameters,interaction(c1,w,pcat,pind,pobs,sep=','))==paste(perc_vals[c1],wind_vals[w],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),1:2]))),cost_N)
 names(cost_N)[1] = 'time'
 cost_N = cost_N[which(cost_N$c2==corr_vals[c2_cost]),]
+a_wind_vec = rep(a_wind_vals,each=dim(cost_N)[1])
+hold = NULL
+for(i in 1:(length(a_wind_vals))){
+	hold = rbind(hold,cost_N)}
+cost_N = hold
 cost_N = with(cost_N,data.frame(N=N,c2=c2,categ=categ,cost=total_cost(error,time,c1_eff,w,a_perc,a_wind)))
+cost_N$a_wind = as.factor(a_wind_vec)
 
-plots.cost[[1]] = param_plot(cost_N, aes(x=N, y = cost, colour = categ),cost_min,cost_max) + 
-	xlab("Group size") + ylab("Cost") + theme(legend.position="none")
+plots.cost[[1]] = param_plot(cost_N, aes(x=N, y = cost, colour = categ, linetype=a_wind),cost_min,cost_max) + 
+	xlab("Group size") + ylab("Cost") + theme(legend.position=c(0.49,0.25),legend.box.just = "left"
+,legend.box='horizontal',legend.key.size=unit(.15,'inch'),legend.key.width=unit(.23,'inch'))+transparent_legend
 	
 
-options(scipen=999)
+options(scipen=999) #needed this when the a parameter was done differently and i didn't want long decimals in the legend
 
 cost_w = error[which(with(parameters,interaction(c1,N,pcat,pind,pobs,sep=','))==paste(perc_vals[c1],N_vals[n],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 cost_w = with(cost_w,data.frame(error=c(categ,indiv),w=rep(w,2),c2=as.factor(rep(c2,2)),categ=factor(rep(c('Badge','Indiv'),each=dim(cost_w)[1])),c1_eff=rep(c1,2)))
@@ -510,6 +518,7 @@ plots.cost[[2]] = param_plot(cost_w, aes(x=w, y = cost, colour = categ, linetype
 	xlab("Memory window")+ ylab("Cost") + theme(legend.position='none')
 	
 options(scipen=0)
+
 	
 cost_c1 = error[which(with(parameters,interaction(N,w,pcat,pind,pobs,sep=','))==paste(N_vals[n],wind_vals[w],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 cost_c1 = with(cost_c1,data.frame(error=c(categ,indiv),w=rep(w,2),c1=rep(c1,2),c2=as.factor(rep(c2,2)),categ=factor(rep(c('Badge','Indiv'),each=dim(cost_c1)[1])),c1_eff=rep(c1,2)))
@@ -526,7 +535,7 @@ for(i in 1:length(a_perc_vals)){
 	hold = rbind(hold,cost_c1)
 }
 cost_c1 = hold
-cost_c1 = rbind(cost_c1,cost_c1)
+# cost_c1 = rbind(cost_c1,cost_c1)
 cost_c1$a_perc = ap_vec
 cost_c1=with(cost_c1,data.frame(cost=total_cost(error,time,c1_eff,w,a_perc,a_wind),c1=c1,categ=categ,a_perc=a_perc))
 # transformed = round(2*ap_vec*exp(2*ap_vec)/(1+exp(2*ap_vec))^2,2)
@@ -536,15 +545,27 @@ cost_c1=with(cost_c1,data.frame(cost=total_cost(error,time,c1_eff,w,a_perc,a_win
 cost_c1$a_perc = as.factor(cost_c1$a_perc)
 
 plots.cost[[3]] = param_plot(cost_c1, aes(x=c1, y = cost, colour = categ, linetype = a_perc),cost_min,cost_max,indiv_agg=TRUE,to_agg=c(which(names(cost_c1)=='categ'),which(names(cost_c1)=='a_perc'))) + 
-	xlab("Category width")+ ylab("Cost") #+ theme(legend.position='none')
+	xlab("Category width")+ ylab("Cost") + theme(legend.position='none') # need to aggregate by both categ and a_perc in case a_perc_val affects the cost of individual learners using c1=0
 	
-leg_c1 = get_legend(plots.cost[[3]])
-plots.cost[[3]] = plots.cost[[3]]+ theme(legend.position='none ')
+# leg_c1 = get_legend(plots.cost[[3]])
+# plots.cost[[3]] = plots.cost[[3]]+ theme(legend.position='none ')
 
-pdf(file=paste(wd,"/costs.pdf",sep=''),width=6.8,height=2)	
-widths = c(1,1,1,0.4)
+cost_pobs = error[which(with(parameters,interaction(N,w,c1,pcat,pind,sep=','))==paste(N_vals[n],wind_vals[w-2],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),]
+cost_pobs = with(cost_pobs,data.frame(error=c(categ,indiv),w=rep(w,2),c1=rep(c1,2),c2=as.factor(rep(c2,2)),pobs=rep(pobs,2),categ=factor(rep(c('Badge','Indiv'),each=dim(cost_pobs)[1])),c1_eff=rep(c1,2)))
+cost_pobs$c1_eff[which(cost_pobs$categ=='Indiv')]=0
+cost_pobs = cbind(10^(as.vector(unlist(time[which(with(parameters,interaction(N,w,c1,pcat,pind,sep=','))==paste(N_vals[n],wind_vals[w-2],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),1:2]))),cost_pobs)
+names(cost_pobs)[1]='time'
+cost_pobs = cost_pobs[which(cost_pobs$c2==corr_vals[c2_cost]),]
+cost_pobs=with(cost_pobs,data.frame(cost=total_cost(error,time,c1_eff,w,a_perc,a_wind),pobs=pobs,categ=categ,a_perc=a_perc))
+cost_pobs$a_perc = as.factor(cost_pobs$a_perc)
+
+plots.cost[[4]] = param_plot(cost_pobs, aes(x=pobs, y = cost, colour = categ),cost_min,cost_max) + 
+	xlab("Prob of observing")+ ylab("Cost") + theme(legend.position='none')
+
+pdf(file=paste(wd,"/costs.pdf",sep=''),width=6.8,height=3)	
+widths = c(1,1)
 widths = widths/sum(widths)
-grid.arrange(plots.cost[[1]],plots.cost[[2]],plots.cost[[3]],leg_c1,ncol=4,widths=widths)
+grid.arrange(plots.cost[[1]],plots.cost[[2]],plots.cost[[3]],plots.cost[[4]],ncol=2,widths=widths)
 dev.off()
 
 # ###########cost comparison

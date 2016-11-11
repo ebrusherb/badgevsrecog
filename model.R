@@ -270,10 +270,10 @@ dynamics_full <- function(){
 		for(t in 1:(Tfights+1)){
 	
 			if(sum(!is.na(a_cat_byind[i,,t]))>=1){
-				error_cat[i,t] = sum(abs(a_cat_byind[i,setdiff(1:N,i),t]-qual_vals[setdiff(1:N,i)]) ,na.rm=TRUE) /sum(!is.na(a_cat_byind[i,,t])) #/ abs(qual_vals)
+				error_cat[i,t] = sum(abs(a_cat_byind[i,setdiff(1:N,i),t]-qual_vals[setdiff(1:N,i)]) ,na.rm=TRUE) /sum(!is.na(a_cat_byind[i,setdiff(1:N,i),t])) #/ abs(qual_vals)
 				}
 			if(sum(!is.na(a_ind[i,,t]))>=1){
-				error_ind[i,t] = sum(abs(a_ind[i,setdiff(1:N,i),t]-qual_vals[setdiff(1:N,i)] ) ,na.rm=TRUE) /sum(!is.na(a_ind[i,,t]))  #/ abs(qual_vals)
+				error_ind[i,t] = sum(abs(a_ind[i,setdiff(1:N,i),t]-qual_vals[setdiff(1:N,i)] ) ,na.rm=TRUE) /sum(!is.na(a_ind[i,setdiff(1:N,i),t]))  #/ abs(qual_vals)
 				}
 			# if(sum(!is.na(a_cat_byind[,i,t]))>=1){
 			# highrank_cat[i,t] = sum(a_cat_byind[,i,t],na.rm=TRUE) /sum(!is.na(a_cat_byind[,i,t]))

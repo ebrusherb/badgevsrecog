@@ -4,10 +4,11 @@
 #SBATCH --cpus-per-task=10
 #SBATCH -t 90:00:00
 #SBATCH -J bvr_paramsweep
-#SBATCH -o bvr_paramsweep.out
+#SBATCH -o bvr_paramsweep_%a.out
 # #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=eleanor.brush@gmail.com
+#SBATCH --array=1-10
 
 module load R
 
@@ -21,6 +22,6 @@ echo 'Running on'
 hostname
 echo '-------------------------------'
 
-R --no-save < paramsweep_par.R
+R --no-save < paramsweep_par.R --args ${SLURM_ARRAY_TASK_ID}
 
 # rm -rf /tmp/ebrush/$SLURM_JOB_ID
