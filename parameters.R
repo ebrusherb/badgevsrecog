@@ -66,13 +66,15 @@ facs=with(parameters,interaction(N,c1,w,pcat,pind,c2,pobs,sep=','))
 parameters=aggregate(parameters,by=list(facs),FUN=mean)
 
 toplot = with(toplot,interaction(N,c1,w,pcat,pind,c2,pobs,sep=','))
-toplot = as.vector(sapply(as.character(toplot),function(x) which(as.character(parameters$Group.1)==x)))
-toplot = matrix(toplot,ncol=length(c2vals))
+toplot_indices = as.vector(sapply(as.character(toplot),function(x) which(as.character(parameters$Group.1)==x)))
+parameters = rbind(parameters[-toplot_indices,],parameters[toplot_indices,]) #move toplot to end of parameters
+toplot_indices = dim(parameters)[1]-length(toplot_indices)+(1:length(toplot_indices))
 
-breaks = 10
-small = floor(dim(parameters)[1]/breaks)
+breaks = 9
+small = floor((min(toplot_indices)-1)/breaks)
 chunk = list()
 for(i in 1:(breaks-1)){
 	chunk[[i]] = ((i-1)*small+1):(i*small)
 }
-chunk[[breaks]]=((breaks-1)*small+1):dim(parameters)[1]
+chunk[[breaks]]=((breaks-1)*small+1):(min(toplot_indices)-1)
+chunk[[breaks+1]]=toplot_indices

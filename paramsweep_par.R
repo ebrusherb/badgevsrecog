@@ -96,20 +96,22 @@ time_ind_mean<- foreach(p=1:xparam,.combine='c') %do% {
 	
 error_time = list()
 
-save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,sim_runs,observation_happens,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'.Rdata',sep=''))
+save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,Tfights,Tfights_min,sim_runs,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'_',to_work_with,'.Rdata',sep=''))
 
-if(length(toplot)>0){
-	for(p in 1:dim(toplot)[1]){
+
+if(to_work_with == breaks){
+	collapsed_indices = matrix(1:xparam,ncol=length(c2vals))
+	for(p in 1:(xparam/length(c2vals))){
 		
 		error_cat_stats_time<- foreach(c2=c2vals,.combine='cbind') %do% {
 			error_cat_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
-				error_cat[[toplot[p,c2]]][[k]][,1:Tfights_min]
+				error_cat[[collapsed_indices[p,c2]]][[k]][,1:Tfights_min]
 			} 
 			rbind(colMeans(error_cat_stats_time_tmp,na.rm=TRUE),colSds(error_cat_stats_time_tmp,na.rm=TRUE))
 		}
 		c2 = which.max(corr_vals[c2vals])
 		error_ind_stats_time_tmp <-foreach(k = 1:sim_runs,.combine='rbind') %do%{
-				error_ind[[toplot[p,c2]]][[k]][,1:Tfights_min]
+				error_ind[[collapsed_indices[p,c2]]][[k]][,1:Tfights_min]
 			} 
 		error_ind_stats_time<-rbind(colMeans(error_ind_stats_time_tmp,na.rm=TRUE),colSds(error_ind_stats_time_tmp,na.rm=TRUE))
 		
@@ -119,6 +121,6 @@ if(length(toplot)>0){
 	}
 }
 
-save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,toplot,Tfights,Tfights_min,sim_runs,observation_happens,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'_',to_work_with,'.Rdata',sep=''))
+save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,Tfights,Tfights_min,sim_runs,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'_',to_work_with,'.Rdata',sep=''))
 
 quit()
