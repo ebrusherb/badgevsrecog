@@ -16,7 +16,7 @@ source('ind2sub.R')
 source('sub2ind.R')
 source('get_legend.R')
 source('combine_files.R')
-
+#
 param_plot <- function(data,mapping,ymin,ymax,ybreaks=NULL,ylabels=NULL,indiv_agg = FALSE,to_agg = NULL){	
 	if(indiv_agg){
 		if(is.null(to_agg)){to_agg = which(names(data)=='categ')}
