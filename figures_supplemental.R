@@ -101,14 +101,14 @@ plots.pw[[1]] = ggplot(error_pw_subset,aes(x=pobs,y=w,z=categ))+
 	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Probability of obs') + ylab('Memory window')
 
-plots.Nc[[1]] = ggplot(error_Nc_subset,aes(x=c1,y=N,z=categ))+
+plots.Nc[[1]] = ggplot(error_Nc_subset,aes(x=N,y=c1,z=categ))+
 	geom_tile(aes(fill = categ)) + 
 	# stat_contour(breaks=contour_breaks)+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Category width') + ylab('Group size')
+	ylab('Category width') + xlab('Group size')
 
 	
 M = max(c(max(time_Nw_subset$categ),max(time_cw_subset$categ),max(time_pw_subset$categ),max(time_Nc_subset$categ)))
@@ -151,17 +151,17 @@ plots.pw[[2]] = ggplot(time_pw_subset,aes(x=pobs,y=w,z=categ))+
 	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Probability of obs') + ylab('Memory window')	
 	
-plots.Nc[[2]] = ggplot(time_Nc_subset,aes(x=c1,y=N,z=categ))+
+plots.Nc[[2]] = ggplot(time_Nc_subset,aes(y=c1,x=N,z=categ))+
 	geom_tile(aes(fill = categ)) + 
 	# stat_contour(breaks=contour_breaks)+
 	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Category width') + ylab('Group size')	
+	ylab('Category width') + xlab('Group size')	
 		
 pdf(file=paste(wd,"/parameter_interactions_badge.pdf",sep=''),width=6.8,height=5)		
-grid.arrange(plots.Nw[[1]],plots.pw[[1]],plots.cw[[1]],plots.Nc[[1]],contour_leg_error,plots.Nw[[2]],plots.pw[[2]],plots.cw[[2]],plots.Nc[[2]],contour_leg_time,ncol=5,widths=c(0.3,0.3,0.3,0.3,0.13))	
+grid.arrange(plots.Nw[[1]],plots.Nc[[1]],plots.cw[[1]],plots.pw[[1]],contour_leg_error,plots.Nw[[2]],plots.Nc[[2]],plots.cw[[2]],plots.pw[[2]],contour_leg_time,ncol=5,widths=c(0.3,0.3,0.3,0.3,0.13))	
 dev.off()
 
 M = max(c(max(error_Nw_subset$indiv),max(error_cw_subset$indiv),max(error_pw_subset$indiv),max(error_Nc_subset$indiv)))

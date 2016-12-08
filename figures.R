@@ -11,6 +11,7 @@ library(car)
 library(matrixStats)
 library(plyr)
 library(gtable)
+library(reshape)
 source('multiplot.R')
 source('ind2sub.R')
 source('sub2ind.R')
@@ -100,8 +101,8 @@ down_sample = 100
 
 for(q in 1:((dim(parameters_toplot)[1])/xcorr)){
 	N = parameters_toplot$N[q]
-	perc = parameters$c1[q]
-	wind = parameters$w[q]
+	perc = parameters_toplot$c1[q]
+	wind = parameters_toplot$w[q]
 
 	error_now=error_time[[q]][seq(1,Tfights_min*3,by=down_sample),]
 	if(length(which(error$fights>Tfights_min))!=0){
@@ -585,7 +586,7 @@ width = 6.8
 height = 3.5
 bar_height = height/2-0.4
 bump_up = 0.25
-marg = c(0.18,.06,0,0)
+marg = c(0.18,.09,0,0)
 a_perc = a_perc_vals[a]
 a_wind = a_wind_vals[a]
 
@@ -617,8 +618,16 @@ names(cost_Nc)[3:4]=c('categ_error','indiv_error')
 cost_Nc = with(cost_Nc,data.frame(N=N,c1=c1,c2=c2,categ=total_cost(categ_error,categ_time,c1_eff,w,a_perc,a_wind),indiv=total_cost(indiv_error,indiv_time,0,w,a_perc,a_wind)))#c1 is 0 for individual learners
 cost_Nc$diff=cost_Nc$categ-cost_Nc$indiv
 
-M = max(c(max(cost_Nw$diff),max(cost_cw$diff),max(cost_Nc$diff)))
-m = min(c(min(cost_Nw$diff),min(cost_cw$diff),min(cost_Nc$diff)))
+cost_pw = error[which(with(parameters,interaction(N,c1,pcat,pind,sep=','))==paste(N_vals[n],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),]
+cost_pw$c1_eff = cost_pw$c1
+cost_pw = cbind(10^(time[which(with(parameters,interaction(N,c1,pcat,pind,sep=','))==paste(N_vals[n],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),1:2]),cost_pw)
+names(cost_pw)[1:2]=c('categ_time','indiv_time')
+names(cost_pw)[3:4]=c('categ_error','indiv_error')
+cost_pw = with(cost_pw,data.frame(pobs=pobs,w=w,c2=c2,categ=total_cost(categ_error,categ_time,c1_eff,w,a_perc,a_wind,pobs),indiv=total_cost(indiv_error,indiv_time,0,w,a_perc,a_wind,pobs))) #c1 is 0 for individual learners
+cost_pw$diff=cost_pw$categ-cost_pw$indiv
+
+M = max(c(max(cost_Nw$diff),max(cost_cw$diff),max(cost_Nc$diff),max(cost_pw$diff)))
+m = min(c(min(cost_Nw$diff),min(cost_cw$diff),min(cost_Nc$diff),min(cost_pw$diff)))
 M = max(M,abs(m))
 m = -M
 cut_breaks = seq(m,M,length.out=11)
@@ -630,6 +639,7 @@ shift = 0.1
 # contour_breaks = round(seq(m+shift,M-shift,length.out=3),2)
 legend_breaks = c(-1,0,1)
 legend_labels = legend_breaks
+legend_labels[which(legend_labels==0)]='0 Equivalent'
 # legend_labels[1] = 'Badge cost less by 1'
 # legend_labels[2] = 'Costs equal'
 # legend_labels[3] = 'Badge cost greater by 1'
@@ -671,12 +681,14 @@ contour_leg_cost[[1]][[1]]$heights[[2]] = sum(rep(unit(0,'inch'), 3.5),
 plots.cost.Nw = list()
 plots.cost.cw = list()
 plots.cost.Nc = list()
+plots.cost.pw = list()
 
 for(c2 in 1:xcorr){
 
 cost_Nw_subset = cost_Nw[which(cost_Nw$c2==corr_vals[c2]),]
 cost_cw_subset = cost_cw[which(cost_cw$c2==corr_vals[c2]),]
 cost_Nc_subset = cost_Nc[which(cost_Nc$c2==corr_vals[c2]),]
+cost_pw_subset = cost_pw[which(cost_pw$c2==corr_vals[c2]),]
 
 plots.cost.Nw[[c2]] = ggplot(cost_Nw_subset,aes(x=N,y=w,z=diff))+	
 	geom_tile(aes(fill = diff)) +  
@@ -696,22 +708,28 @@ plots.cost.cw[[c2]] = ggplot(cost_cw_subset,aes(x=c1,y=w,z=diff))+
 	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')
 	
-plots.cost.Nc[[c2]] = ggplot(cost_Nc_subset,aes(y=N,x=c1,z=diff))+	
+plots.cost.Nc[[c2]] = ggplot(cost_Nc_subset,aes(x=N,y=c1,z=diff))+	
 	geom_tile(aes(fill = diff)) +  
 	# stat_contour(breaks=contour_breaks)+
 	scale_fill_gradientn(colours=divpal,limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	ylab('Group size') + xlab('Category width')
+	xlab('Group size') + ylab('Category width')
 
-	
+plots.cost.pw[[c2]] = ggplot(cost_pw_subset,aes(x=pobs,y=w,z=diff))+geom_tile(aes(fill = diff)) +  
+	# stat_contour(breaks=contour_breaks)+
+	scale_fill_gradientn(colours=divpal,limits=c(m,M),guide="colorbar")+
+	theme_bw() +
+	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
+	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	ylab('Memory window') + xlab('Prob of obs')
 }
 	
 pdf(file=paste(wd,"/cost_comparisons.pdf",sep=''),width=width,height=height)	
-widths = c(1,1,1,.6)
+widths = c(1,1,1,1,0.7)
 widths = widths/sum(widths)
-grid.arrange(plots.cost.Nw[[1]],plots.cost.cw[[1]],plots.cost.Nc[[1]],contour_leg_cost,plots.cost.Nw[[2]],plots.cost.cw[[2]],plots.cost.Nc[[2]],ncol=4,widths=widths)
+grid.arrange(plots.cost.Nw[[1]],plots.cost.Nc[[1]],plots.cost.cw[[1]],plots.cost.pw[[1]],contour_leg_cost,plots.cost.Nw[[2]],plots.cost.Nc[[2]],plots.cost.cw[[2]],plots.cost.pw[[2]],ncol=5,widths=widths)
 dev.off()
 
 graphics.off()
