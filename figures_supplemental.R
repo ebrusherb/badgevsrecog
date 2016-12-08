@@ -1,112 +1,22 @@
-setwd('/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/')
-wd = '/Users/eleanorbrush/Desktop'
-library(ggplot2)
-library(gridExtra)
-library(RColorBrewer)
-library(parallel)
-library(foreach)
-library(doParallel)
-library(matrixStats)
-library(car)
-library(plyr)
-library(gtable)
-library(reshape2)
-source('multiplot.R')
-source('ind2sub.R')
-source('sub2ind.R')
-source('get_legend.R')
-source('combine_files.R')
-source('model.R')
-
-
-param_plot <- function(data,mapping,ymin,ymax,ybreaks=NULL,ylabels=NULL,indiv_agg = FALSE,to_agg = NULL){	
-	if(indiv_agg){
-		if(is.null(to_agg)){to_agg = which(names(data)=='categ')}
-		agg_mean = aggregate(data[data$categ=='Indiv',1],by=list(interaction(data[data$categ=='Indiv',to_agg])),FUN='mean')
-		for(i in 1:dim(agg_mean)[1]){
-			data[which(interaction(data[,to_agg])==agg_mean[i,1]),1] = agg_mean[i,2]
-		}		
-	}
-	plot = ggplot(data,mapping)+ 
-	geom_line() +
-	guides(color=guide_legend(order=1),linetype=guide_legend(order=3)) + 	
-	scale_color_manual(values=c(divpal[1],divpal[5]))+scale_linetype_manual(values=c(3,1)) +
-	theme_bw() +
-	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-	labs(colour="",linetype="")
-	if(is.null(ybreaks) && is.null(ylabels)){
-		plot = plot+scale_y_continuous(limits=c(ymin,ymax))
-	} else{ plot = plot + scale_y_continuous(limits=c(ymin,ymax),breaks=ybreaks,labels=ylabels)
-		}
-	if(indiv_agg){
-		plot = plot + geom_point(data=data[which(data$categ=='Badge'),],mapping) } else{
-			plot = plot + geom_point()
-		}
-	return(plot)
-}
-perc_cost<-function(perc_wind){
-	cost = 2/(1+exp(a_perc*(2-perc_wind)))-1
-	return(cost)
-}
-
-wind_cost<-function(wind){
-	cost = 2/(1+exp(a_wind*wind))-1
-	return(cost)
-}
-
-mypal=brewer.pal(9,'Set1')
-divpal = brewer.pal(5,'RdBu')
-seqpal = rev(brewer.pal(5,'YlOrRd'))
-
-load("/Users/eleanorbrush/Dropbox/evo_badgesVSrecognition/summary_stats_2016_08_17.Rdata")
-error = cbind(data.frame(categ=as.vector(error_cat_mean),indiv=as.vector(error_ind_mean)),parameters)
-time = cbind(data.frame(categ=log(as.vector(time_cat_mean),base=10),indiv=log(as.vector(time_ind_mean),base=10)),parameters)
-
-N_vals = sort(unique(parameters$N))
-xN = length(N_vals)
-perc_vals = sort(unique(parameters$c1))
-xperc = length(perc_vals)
-wind_vals = sort(unique(parameters$w))
-xwind = length(wind_vals)
-confus_cat_vals = sort(unique(parameters$pcat),decreasing=TRUE)
-xconfus_cat = length(confus_cat_vals)
-confus_ind_vals = sort(unique(parameters$pind))
-xconfus_ind = length(confus_ind_vals)
-corr_vals = sort(unique(parameters$c2))
-xcorr = length(corr_vals)
-p_obs_vals = sort(unique(parameters$pobs))
-xpobs = length(p_obs_vals)
-
-n = which(N_vals==N)
-c1 = which(perc_vals==c1)
-w = which(wind_vals==w)
-pcat = which(confus_cat_vals==pcat)
-pind = which(confus_ind_vals==pind)
-error_max = 0.42
-time_min = min(time[,1:2])-0.1
-time_max = max(time[,1:2])+0.1
-time_labels = c(500,1000,2000,4000,8000)
-time_breaks = log(time_labels,base=10)
-
-
-
-marg = c(0.1,0.1,0,0)
-textsz = 10
 
 ##heat maps of error and time --- 
 plots.Nw=list()
 plots.cw = list()
 plots.pw = list()
+plots.Nc = list()
 c2 = 2
+marg = c(0.3,0.2,0,0)
 
 error_Nw = error[which(with(parameters,interaction(c1,pcat,pind,pobs,sep=','))==paste(perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 if(is.element(Inf,wind_vals)){
-error_Nw = error_Nw[-which(error_Nw$w==Inf),]}
+# error_Nw = error_Nw[-which(error_Nw$w==Inf),]}
+error_Nw$w[which(error_Nw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 error_Nw$diff = error_Nw$categ-error_Nw$indiv
 
 time_Nw = time[which(with(parameters,interaction(c1,pcat,pind,pobs,sep=','))==paste(perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 if(is.element(Inf,wind_vals)){
-time_Nw = time_Nw[-which(time_Nw$w==Inf),]}
+# time_Nw = time_Nw[-which(time_Nw$w==Inf),]}
+time_Nw$w[which(time_Nw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 time_Nw$diff = time_Nw$categ-time_Nw$indiv
 
 error_Nw_subset = error_Nw[which(error_Nw$c2==corr_vals[c2]),]
@@ -114,12 +24,14 @@ time_Nw_subset = time_Nw[which(time_Nw$c2==corr_vals[c2]),]
 
 error_cw = error[which(with(parameters,interaction(N,pcat,pind,pobs,sep=','))==paste(N_vals[n],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 if(is.element(Inf,wind_vals)){
-error_cw = error_cw[-which(error_cw$w==Inf),]}
+# error_cw = error_cw[-which(error_cw$w==Inf),]}
+error_cw$w[which(error_cw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 error_cw$diff = error_cw$categ-error_cw$indiv
 
 time_cw = time[which(with(parameters,interaction(N,pcat,pind,pobs,sep=','))==paste(N_vals[n],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
 if(is.element(Inf,wind_vals)){
-time_cw = time_cw[-which(time_cw$w==Inf),]}
+# time_cw = time_cw[-which(time_cw$w==Inf),]}
+time_cw$w[which(time_cw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 time_cw$diff = time_cw$categ-time_cw$indiv
 
 error_cw_subset = error_cw[which(error_cw$c2==corr_vals[c2]),]
@@ -127,25 +39,36 @@ time_cw_subset = time_cw[which(time_cw$c2==corr_vals[c2]),]
 
 error_pw = error[which(with(parameters,interaction(N,c1,pcat,pind,sep=','))==paste(N_vals[n],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),]
 if(is.element(Inf,wind_vals)){
-error_pw = error_pw[-which(error_pw$w==Inf),]}
+# error_pw = error_pw[-which(error_pw$w==Inf),]}
+error_pw$w[which(error_pw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 error_pw$diff = error_pw$categ-error_pw$indiv
 
 time_pw = time[which(with(parameters,interaction(N,c1,pcat,pind,sep=','))==paste(N_vals[n],perc_vals[c1],confus_cat_vals[1],confus_ind_vals[1],sep=',')),]
 if(is.element(Inf,wind_vals)){
-time_pw = time_pw[-which(error_pw$w==Inf),]}
+# time_pw = time_pw[-which(error_pw$w==Inf),]}
+time_pw$w[which(time_pw$w==Inf)]=wind_vals[xwind-1]+diff(wind_vals)[1]}
 time_pw$diff = time_pw$categ-error_pw$indiv
 
 error_pw_subset = error_pw[which(error_pw$c2==corr_vals[c2]),]
 time_pw_subset = time_pw[which(error_pw$c2==corr_vals[c2]),]
+
+error_Nc = error[which(with(parameters,interaction(w,pcat,pind,pobs,sep=','))==paste(wind_vals[w],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
+error_Nc$diff = error_Nc$categ-error_Nc$indiv
+
+time_Nc = time[which(with(parameters,interaction(w,pcat,pind,pobs,sep=','))==paste(wind_vals[w],confus_cat_vals[1],confus_ind_vals[1],0,sep=',')),]
+time_Nc$diff = time_Nc$categ-time_Nc$indiv
+
+error_Nc_subset = error_Nc[which(error_Nc$c2==corr_vals[c2]),]
+time_Nc_subset = time_Nc[which(time_Nc$c2==corr_vals[c2]),]
 	
-M = max(c(max(error_Nw_subset$categ),max(error_cw_subset$categ),max(error_pw_subset$categ)))
-m = min(c(min(error_Nw_subset$categ),min(error_cw_subset$categ),min(error_pw_subset$categ)))
+M = max(c(max(error_Nw_subset$categ),max(error_cw_subset$categ),max(error_pw_subset$categ),max(error_Nc_subset$categ)))
+m = min(c(min(error_Nw_subset$categ),min(error_cw_subset$categ),min(error_pw_subset$categ),min(error_Nc_subset$categ)))
 # m = 0
 cut_breaks = seq(m,M,length.out=11)
 d  = diff(cut_breaks)[1]
 legend_data = data.frame(z = cut(seq(m+d/2,M-d/2,length.out = 22),breaks=cut_breaks), x = 1:22,y = 1:22)
 legend_data = data.frame(z = seq(m,M,length.out = 22), x = 1:22,y = 1:22)
-legend_breaks = round(seq(m,M,length.out=4),2)
+legend_breaks = round(seq(.1,.4,by=0.1),2)
 legend_labels = legend_breaks
 legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Error')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
 
@@ -157,7 +80,7 @@ plots.Nw[[1]] = ggplot(error_Nw_subset,aes(x=N,y=w,z=categ))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Group size') + ylab('Memory window')
 
 plots.cw[[1]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=categ))+	
@@ -166,7 +89,7 @@ plots.cw[[1]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=categ))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')
 	
 plots.pw[[1]] = ggplot(error_pw_subset,aes(x=pobs,y=w,z=categ))+
@@ -175,61 +98,80 @@ plots.pw[[1]] = ggplot(error_pw_subset,aes(x=pobs,y=w,z=categ))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
+	xlab('Probability of obs') + ylab('Memory window')
+
+plots.Nc[[1]] = ggplot(error_Nc_subset,aes(x=c1,y=N,z=categ))+
+	geom_tile(aes(fill = categ)) + 
+	# stat_contour(breaks=contour_breaks)+
+	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	theme_bw() +
+	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Probability of observing') + ylab('Memory window')
+	xlab('Category width') + ylab('Group size')
+
 	
-M = max(c(max(time_Nw_subset$categ),max(time_cw_subset$categ),max(time_pw_subset$categ)))
-m = min(c(min(time_Nw_subset$categ),min(time_cw_subset$categ),min(time_pw_subset$categ)))
+M = max(c(max(time_Nw_subset$categ),max(time_cw_subset$categ),max(time_pw_subset$categ),max(time_Nc_subset$categ)))
+m = min(c(min(time_Nw_subset$categ),min(time_cw_subset$categ),min(time_pw_subset$categ),min(time_Nc_subset$categ)))
 cut_breaks = seq(m,M,length.out=11)
 d  = diff(cut_breaks)[1]
 legend_data = data.frame(z = cut(seq(m+d/2,M-d/2,length.out = 22),breaks=cut_breaks), x = 1:22,y = 1:22)
 legend_data = data.frame(z = seq(m,M,length.out = 22), x = 1:22,y = 1:22)
 legend_breaks =time_breaks
 legend_labels = 10^legend_breaks
-legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Time')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
+legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Time')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
 
 contour_leg_time = get_legend(legend_plot)
 
 plots.Nw[[2]] = ggplot(time_Nw_subset,aes(x=N,y=w,z=categ))+	
 	geom_tile(aes(fill = categ)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Group size') + ylab('Memory window')
 
 plots.cw[[2]] = ggplot(time_cw_subset,aes(x=c1,y=w,z=categ))+	
 	geom_tile(aes(fill = categ)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')		
 	
 
 plots.pw[[2]] = ggplot(time_pw_subset,aes(x=pobs,y=w,z=categ))+	
 	geom_tile(aes(fill = categ)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
+	theme_bw() +
+	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
+	xlab('Probability of obs') + ylab('Memory window')	
+	
+plots.Nc[[2]] = ggplot(time_Nc_subset,aes(x=c1,y=N,z=categ))+
+	geom_tile(aes(fill = categ)) + 
+	# stat_contour(breaks=contour_breaks)+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
 	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Probability of observing') + ylab('Memory window')		
+	xlab('Category width') + ylab('Group size')	
 		
-pdf(file=paste(wd,"/parameter_interactions_badge.pdf",sep=''),width=6.8,height=4)		
-grid.arrange(plots.Nw[[1]],plots.cw[[1]],plots.pw[[1]],contour_leg_error,plots.Nw[[2]],plots.cw[[2]],plots.pw[[1]],contour_leg_time,ncol=4,widths=c(0.3,0.3,0.3,0.1))	
+pdf(file=paste(wd,"/parameter_interactions_badge.pdf",sep=''),width=6.8,height=5)		
+grid.arrange(plots.Nw[[1]],plots.pw[[1]],plots.cw[[1]],plots.Nc[[1]],contour_leg_error,plots.Nw[[2]],plots.pw[[2]],plots.cw[[2]],plots.Nc[[2]],contour_leg_time,ncol=5,widths=c(0.3,0.3,0.3,0.3,0.13))	
 dev.off()
 
-M = max(c(max(error_Nw_subset$indiv),max(error_cw_subset$indiv),max(error_pw_subset$indiv)))
-m = min(c(min(error_Nw_subset$indiv),min(error_cw_subset$indiv),min(error_pw_subset$indiv)))
+M = max(c(max(error_Nw_subset$indiv),max(error_cw_subset$indiv),max(error_pw_subset$indiv),max(error_Nc_subset$indiv)))
+m = min(c(min(error_Nw_subset$indiv),min(error_cw_subset$indiv),min(error_pw_subset$indiv),min(error_Nc_subset$indiv)))
 # m = 0
 cut_breaks = seq(m,M,length.out=11)
 d  = diff(cut_breaks)[1]
 legend_data = data.frame(z = cut(seq(m+d/2,M-d/2,length.out = 22),breaks=cut_breaks), x = 1:22,y = 1:22)
 legend_data = data.frame(z = seq(m,M,length.out = 22), x = 1:22,y = 1:22)
-legend_breaks = round(seq(m,M,length.out=4),2)
+legend_breaks = round(seq(0,0.5,by=0.1),2)
 legend_labels = legend_breaks
 legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Error')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
 
@@ -241,7 +183,7 @@ plots.Nw[[1]] = ggplot(error_Nw_subset,aes(x=N,y=w,z=indiv))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Group size') + ylab('Memory window')
 
 plots.cw[[1]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=indiv))+	
@@ -250,7 +192,7 @@ plots.cw[[1]] = ggplot(error_cw_subset,aes(x=c1,y=w,z=indiv))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')
 	
 plots.pw[[1]] = ggplot(error_pw_subset,aes(x=pobs,y=w,z=indiv))+
@@ -259,51 +201,53 @@ plots.pw[[1]] = ggplot(error_pw_subset,aes(x=pobs,y=w,z=indiv))+
 	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Probability of observing') + ylab('Memory window')
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
+	xlab('Probability of obs') + ylab('Memory window')
 	
 M = max(c(max(time_Nw_subset$indiv),max(time_cw_subset$indiv),max(time_pw_subset$indiv)))
 m = min(c(min(time_Nw_subset$indiv),min(time_cw_subset$indiv),min(time_pw_subset$indiv)))
+M = max(c(max(time_Nw_subset$indiv),max(time_pw_subset$indiv)))
+m = min(c(min(time_Nw_subset$indiv),min(time_pw_subset$indiv)))
 cut_breaks = seq(m,M,length.out=11)
 d  = diff(cut_breaks)[1]
 legend_data = data.frame(z = cut(seq(m+d/2,M-d/2,length.out = 22),breaks=cut_breaks), x = 1:22,y = 1:22)
 legend_data = data.frame(z = seq(m,M,length.out = 22), x = 1:22,y = 1:22)
 legend_breaks =time_breaks
 legend_labels = 10^legend_breaks
-legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Time')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
+legend_plot = ggplot(legend_data,aes(x=x,y=y,z=z)) + geom_tile(aes(fill=z)) + scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),breaks = legend_breaks, labels = legend_labels)+labs(fill='Time')+theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(),legend.text=element_text(size=textsz))
 
 contour_leg_time = get_legend(legend_plot)
 
 plots.Nw[[2]] = ggplot(time_Nw_subset,aes(x=N,y=w,z=indiv))+	
 	geom_tile(aes(fill = indiv)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Group size') + ylab('Memory window')
 
 plots.cw[[2]] = ggplot(time_cw_subset,aes(x=c1,y=w,z=indiv))+	
 	geom_tile(aes(fill = indiv)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
 	xlab('Category width') + ylab('Memory window')		
 	
 
 plots.pw[[2]] = ggplot(time_pw_subset,aes(x=pobs,y=w,z=indiv))+	
 	geom_tile(aes(fill = indiv)) +  
 	# stat_contour(breaks=contour_breaks)+
-	scale_fill_gradientn(colours=rev(seqpal),limits=c(m,M),guide="colorbar")+
+	scale_fill_gradientn(colours=rev(seqpal2),limits=c(m,M),guide="colorbar")+
 	theme_bw() +
 	theme(text=element_text(family="Helvetica", size=textsz), plot.title=element_text(size=textsz), plot.margin=unit(marg,"cm"), legend.key =element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position='none')+
-	scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +
-	xlab('Probability of observing') + ylab('Memory window')		
+	scale_y_continuous(expand = c(0,0),breaks=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],wind_vals[xwind-1]+diff(wind_vals)[1]),labels=c(wind_vals[c(1,seq(2,(xwind-1),by=2))],'Inf')) + scale_x_continuous(expand = c(0,0)) +
+	xlab('Probability of obs') + ylab('Memory window')		
 		
 pdf(file=paste(wd,"/parameter_interactions_indiv.pdf",sep=''),width=6.8,height=4)		
-grid.arrange(plots.Nw[[1]],plots.cw[[1]],plots.pw[[1]],contour_leg_error,plots.Nw[[2]],plots.cw[[2]],plots.pw[[1]],contour_leg_time,ncol=4,widths=c(0.3,0.3,0.3,0.1))	
+grid.arrange(plots.Nw[[1]],plots.pw[[1]],contour_leg_error,plots.Nw[[2]],plots.pw[[2]],contour_leg_time,ncol=3,widths=c(0.3,0.3,0.13))	
 dev.off()
 
 #####  how categorization works

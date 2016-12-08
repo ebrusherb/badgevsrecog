@@ -4,7 +4,7 @@ library(RColorBrewer)
 library(reshape)
 
 ## ---- parameters -------------------------
-Tfights = 1000 #total number of fights 
+Tfights = 10000 #total number of fights 
 # N = 20 # individuals
 # perc_wind = 0.1 # difference that animals can perceive
 # memory_window = Inf #how many fights ago they can remember
@@ -28,8 +28,8 @@ time_ind_tot = list()
 
 w = 1
 
-N = 10
-sig_qual_corr = 0.7
+N = 20
+sig_qual_corr = 0.9
 perc_wind = 0.5
 memory_window = Inf
 confus_prob_cat = Inf
@@ -225,7 +225,8 @@ a_ind_tot[[w]] = a_ind
 time_cat_tot[[w]] = time_cat_temp
 time_ind_tot[[w]] = time_ind_temp
 
-pal = brewer.pal(N-1,'Set1')
+pal = brewer.pal(9,'Set1')
+pal = pal[(1:(N-1))%%9+1]
 
 Ylim = c(0,0.7)
 
@@ -243,8 +244,7 @@ for(k in setdiff(1:N,i)){
 tmp = tmp = data.frame(error=c(Ylim[1],Ylim[2]),fights=rep(mean(time_cat_tot[[w]][i,],na.rm=TRUE),2),ind=as.factor(rep('mean',2)))
 error_ex = rbind(error_ex,tmp)
 
-
-ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) + 
+cat_ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) + 
 	geom_line() + 
 	theme_bw() + 
 	scale_y_continuous(limits=Ylim) +
@@ -252,8 +252,29 @@ ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) +
 	xlab("Fights")+ylab("Error") +
 	scale_color_manual(values=c(pal,'black'))+
 	geom_segment(aes(x=1,xend=Tfights+1,y=error_threshold,yend=error_threshold,color='mean')) 
+	
+error_ex = abs(a_ind_tot[[w]][i,,]-matrix(rep(qual_vals_tot[[w]],Tfights+1),nrow=N,byrow=FALSE))
+error_ex = error_ex[-i,]
+error_mean = colMeans(error_ex,na.rm=TRUE)
+error_ex = rbind(error_ex,error_mean)
+error_ex = data.frame(error=as.vector(t(error_ex)),fights=rep(1:(Tfights+1),N),ind=as.factor(rep(c(setdiff(1:N,i),'mean'),each=Tfights+1)))
+for(k in setdiff(1:N,i)){
+	tmp = data.frame(error=c(Ylim[1],Ylim[2]),fights=rep(time_cat_tot[[w]][i,k],2),ind=as.factor(rep(k,2)))
+	error_ex = rbind(error_ex,tmp)
+}
+tmp = tmp = data.frame(error=c(Ylim[1],Ylim[2]),fights=rep(mean(time_cat_tot[[w]][i,],na.rm=TRUE),2),ind=as.factor(rep('mean',2)))
+error_ex = rbind(error_ex,tmp)	
+
+ind_ex = ggplot(error_ex,aes(x=fights, y = error, colour = ind)) + 
+	geom_line() + 
+	theme_bw() + 
+	scale_y_continuous(limits=Ylim) +
+	theme(text=element_text(family="Helvetica", size=10), plot.title=element_text(size=10),plot.margin=unit(c(0,0.25,0,0),"cm"),legend.position='none') +
+	xlab("Fights")+ylab("Error") +
+	scale_color_manual(values=c(pal,'black'))+
+	geom_segment(aes(x=1,xend=Tfights+1,y=error_threshold,yend=error_threshold,color='mean'))
 
 # pdf(file="/Users/eleanorbrush/Desktop/learning_time_example.pdf",width=5,height=3)		
 # multiplot(plotlist=plots,cols=3)
-print(ex)
+grid.arrange(cat_ex,ind_ex,ncol=2)
 # dev.off()

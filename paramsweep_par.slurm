@@ -2,13 +2,13 @@
 
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10
-#SBATCH -t 90:00:00
+#SBATCH -t 3:00:00
 #SBATCH -J bvr_paramsweep
 #SBATCH -o bvr_paramsweep_%a.out
 # #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=eleanor.brush@gmail.com
-#SBATCH --array=1-10
+#SBATCH --array=20
 
 module load R
 

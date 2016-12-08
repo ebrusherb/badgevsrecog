@@ -70,11 +70,11 @@ toplot_indices = as.vector(sapply(as.character(toplot),function(x) which(as.char
 parameters = rbind(parameters[-toplot_indices,],parameters[toplot_indices,]) #move toplot to end of parameters
 toplot_indices = dim(parameters)[1]-length(toplot_indices)+(1:length(toplot_indices))
 
-breaks = 9
+breaks = 18
 small = floor((min(toplot_indices)-1)/breaks)
 chunk = list()
-for(i in 1:(breaks-1)){
+for(i in 1:(breaks)){
 	chunk[[i]] = ((i-1)*small+1):(i*small)
 }
-chunk[[breaks]]=((breaks-1)*small+1):(min(toplot_indices)-1)
-chunk[[breaks+1]]=toplot_indices
+chunk[[breaks+1]]=((breaks)*small+1):(min(toplot_indices)-1)
+chunk[[breaks+2]]=toplot_indices

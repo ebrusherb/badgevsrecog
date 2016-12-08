@@ -17,7 +17,7 @@ source('glue.R')
 
 ## ---- parameters -------------------------
 Tfights = 20000 #total number of fights 
-Tfights_min = 5000
+Tfights_min = 10000
 sim_runs = 25
 # N = 20 # individuals
 # perc_wind = 0.1 # difference that animals can perceive
@@ -99,7 +99,7 @@ error_time = list()
 save(parameters,error_cat_mean,error_ind_mean,time_cat_mean,time_ind_mean,error_time,Tfights,Tfights_min,sim_runs,learn_rate,learn_noise,obs_learn_rate,obs_noise,file=paste('/homes/ebrush/priv/badgevsrecog/summary_stats_',substr(Date,1,4),'_',substr(Date,6,7),'_',substr(Date,9,10),'_',to_work_with,'.Rdata',sep=''))
 
 
-if(to_work_with == breaks){
+if(to_work_with == breaks+2){
 	collapsed_indices = matrix(1:xparam,ncol=length(c2vals))
 	for(p in 1:(xparam/length(c2vals))){
 		
