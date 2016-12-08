@@ -640,7 +640,7 @@ dev.off()
 # cost functions
 
 poss_perc_vals = seq(0,2,length.out=100)
-poss_wind_vals = seq(0,2000,length.out=100)
+poss_wind_vals = seq(0,3000,length.out=100)
 
 perc_cost = data.frame(c1=rep(poss_perc_vals,times=length(a_perc_vals)),a_perc=rep(a_perc_vals,each=length(poss_perc_vals)))
 # perc_cost$cost = with(perc_cost,(2/(1+exp(-a_perc*(2-c1)))-1))
@@ -660,7 +660,7 @@ perc_ex = perc_ex + theme(legend.position='none')
 
 wind_cost = data.frame(w=rep(poss_wind_vals,times=length(a_wind_vals)),a_wind=rep(a_wind_vals,each=length(poss_wind_vals)))
 # wind_cost$cost = with(wind_cost,(2/(1+exp(-a_wind*w))-1))
-wind_cost$cost = with(wind_cost,(w/2000)^a_wind)
+wind_cost$cost = with(wind_cost,(w/3000)^a_wind)
 wind_cost$a_wind = as.factor(wind_cost$a_wind)
 
 wind_ex = ggplot(wind_cost,aes(x=w,y=cost,linetype=a_wind))+geom_line()+
